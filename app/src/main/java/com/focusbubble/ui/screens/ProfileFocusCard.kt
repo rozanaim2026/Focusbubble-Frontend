@@ -18,6 +18,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.focusbubble.ui.viewmodel.BlockedAppsViewModel
 import com.focusbubble.ui.viewmodel.FocusStatsViewModel
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
+
 
 @Composable
 fun ProfileFocusCard(

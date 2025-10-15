@@ -7,12 +7,14 @@ pluginManagement {
 }
 
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
     repositories {
         google()
         mavenCentral()
+        maven("https://jitpack.io") // if you need it
     }
 }
 
-rootProject.name = "FocusBubble"
+
+rootProject.name = "Final-Major-Project"
 include(":app")

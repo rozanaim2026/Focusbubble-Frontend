@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <array name="com_google_android_gms_fonts_certs">
+        <item>@array/com_google_android_gms_fonts_certs_dev</item>
+        <item>@array/com_google_android_gms_fonts_certs_prod</item>
+    </array>
+    <array name="com_google_android_gms_fonts_certs_dev">
+        <item>
+            MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA7f...
+        </item>
+    </array>
+    <array name="com_google_android_gms_fonts_certs_prod">
+        <item>
+            MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...
+        </item>
+    </array>
+    <color name="black">#FF000000</color>
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="white">#FFFFFFFF</color>
+    <string name="app_name">FocusBubble</string>
+    <string name="default_web_client_id" translatable="false">115613430766-si0bjhu5n9beti4dfh70a9m4bpj5o2eu.apps.googleusercontent.com</string>
+    <string name="gcm_defaultSenderId" translatable="false">115613430766</string>
+    <string name="google_api_key" translatable="false">AIzaSyC2UhUfiWqCEKPhl6QNyOQwCtIQ1YmzUS8</string>
+    <string name="google_app_id" translatable="false">1:115613430766:android:6e68134cdf783639ed54ff</string>
+    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyC2UhUfiWqCEKPhl6QNyOQwCtIQ1YmzUS8</string>
+    <string name="google_storage_bucket" translatable="false">focus-bubble-82576.firebasestorage.app</string>
+    <string name="project_id" translatable="false">focus-bubble-82576</string>
+    <string name="server_client_id">464315770315-n5ca91qnc38nmj8039put1ggv22c10n7.apps.googleusercontent.com</string>
+    <style name="Theme.FocusBubble.NoActionBar" parent="Theme.Material3.DayNight.NoActionBar">
+        
+    </style>
+</resources>

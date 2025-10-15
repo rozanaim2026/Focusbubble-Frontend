@@ -35,8 +35,11 @@ fun DashboardScreen(
     onStartFocusClick: (sessionMinutes: Int) -> Unit = {},
     onSchedulesClick: () -> Unit = {},
     onChatsClick: () -> Unit = {},
-    onBlocksClick: () -> Unit = {}
-) {
+    onBlocksClick: () -> Unit = {},
+    onQuotesClick: () -> Unit = {}   // ✅ add this new line
+)
+
+{
 
     var selectedTab by remember { mutableStateOf("Dashboard") }
     var showEditOptionsSheet by remember { mutableStateOf(false) }

@@ -10,39 +10,60 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.focusbubble.ui.BlockOverlayActivity
-import com.focusbubble.data.api.RetrofitInstance
-import com.focusbubble.data.entities.BlockedApp
-import kotlinx.coroutines.*
+import com.focusbubble.ui.utils.UserSession
 import android.app.usage.UsageStatsManager
+import kotlinx.coroutines.*
+import android.os.CountDownTimer
+import com.focusbubble.data.model.BlockedAppResponse
+import com.focusbubble.data.api.RetrofitClient
+
+
+
 
 class BlockerService : Service() {
+    private val serviceScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
-    private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    private var blockedApps: List<BlockedApp> = emptyList()
+
+    private var blockedApps: List<BlockedAppResponse> = emptyList()
     private var currentBlockedApp: String? = null
 
     private var isPaused = false
     private var remainingTime: Long = 25 * 60 * 1000L // default 25 min
-    private var timer: CountDownTimer? = null
     private val notificationId = 1
-    private val channelId = "FocusBubbleBlocker"
+    private val channelId = "focus_bubble_blocking_service"
+    private var timer: CountDownTimer? = null
 
-    override fun onCreate() {
-        super.onCreate()
-        createNotificationChannel()
-        fetchBlockedApps()
-        startForeground(notificationId, buildNotification())
-        startTimer(remainingTime)
-        Log.d("BlockerService", "Service started")
-    }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        val durationMinutes = intent?.getIntExtra("DURATION_MINUTES", 25) ?: 25
+        remainingTime = durationMinutes * 60 * 1000L
 
+        Log.d("BlockerService", "Service started with duration: $durationMinutes minutes")
+
+        // Create notification channel and start foreground
+        createNotificationChannel()
+        startForeground(notificationId, buildNotification())
+
+        // Start the timer
+        startTimer(remainingTime)
+
+        // Handle action buttons
         when (intent?.action) {
             "PAUSE_SESSION" -> togglePauseResume()
             "STOP_SESSION" -> stopSession()
         }
 
+        // Start fetching blocked apps
+        fetchBlockedApps()
+
+        return START_STICKY
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        Log.d("BlockerService", "Service created")
+
+        // Start monitoring foreground apps
         serviceScope.launch {
             while (isActive) {
                 if (!isPaused) {
@@ -51,8 +72,6 @@ class BlockerService : Service() {
                 delay(2000)
             }
         }
-
-        return START_STICKY
     }
 
     override fun onDestroy() {
@@ -123,7 +142,7 @@ class BlockerService : Service() {
         val minutes = (remainingTime / 1000) / 60
         val seconds = (remainingTime / 1000) % 60
         val timeText = String.format("%02d:%02d", minutes, seconds)
-        val blockedCount = blockedApps.count { it.is_active }
+        val blockedCount = blockedApps.count { it.isActive }
 
         val pauseText = if (isPaused) "Resume" else "Pause"
 
@@ -162,15 +181,24 @@ class BlockerService : Service() {
     private fun fetchBlockedApps() {
         serviceScope.launch {
             try {
-                val response = RetrofitInstance.api.getBlockedApps()
-                if (response.isSuccessful) {
-                    blockedApps = response.body() ?: emptyList()
-                    Log.d("BlockerService", "Blocked apps updated: ${blockedApps.size}")
+                // TODO: Get current user ID from UserSession or SharedPreferences
+                val currentUserId = getCurrentUserId()
+                if (currentUserId != -1) {
+                    val response = RetrofitClient.api.getActiveBlocks(currentUserId)
+                    if (response.isSuccessful) {
+                        val blockedAppResponses = response.body() ?: emptyList()
+                        blockedApps = blockedAppResponses
+                        Log.d("BlockerService", "Blocked apps updated: ${blockedApps.size}")
+                    }
                 }
             } catch (e: Exception) {
                 Log.e("BlockerService", "Error fetching blocked apps: ${e.message}")
             }
         }
+    }
+
+    private fun getCurrentUserId(): Int {
+        return UserSession.getUserId(this)
     }
 
     private fun checkForegroundApp() {
@@ -191,7 +219,7 @@ class BlockerService : Service() {
         val recentApp = usageStatsList.maxByOrNull { it.lastTimeUsed }
         recentApp?.let { stats ->
             val foregroundPackage = stats.packageName
-            val isBlocked = blockedApps.any { it.packageName == foregroundPackage && it.is_active }
+            val isBlocked = blockedApps.any { it.packageName == foregroundPackage && it.isActive }
 
             if (isBlocked && currentBlockedApp != foregroundPackage) {
                 currentBlockedApp = foregroundPackage

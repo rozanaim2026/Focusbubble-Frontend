@@ -9,19 +9,33 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
+import com.focusbubble.ui.utils.getIconUri
 import com.focusbubble.data.entities.BlockedApp
 import com.focusbubble.ui.viewmodel.BlockedAppsViewModel
+import com.focusbubble.ui.utils.UserSession
 
 @Composable
 fun BlocksScreen(
     onBackClick: () -> Unit,
     viewModel: BlockedAppsViewModel = hiltViewModel()
 ) {
-    // blockedApps is List<BlockedApp> (database entities)
+    val context = LocalContext.current
     val blockedApps by viewModel.blockedApps.collectAsState()
+
+    // Sync from backend when screen opens
+    LaunchedEffect(Unit) {
+        val userId = UserSession.getUserId(context)
+        if (userId != -1) {
+            viewModel.syncBlocksFromBackend(userId)
+        }
+    }
 
     ScreenWithBack(title = "Blocked Apps", onBackClick = onBackClick) { modifier ->
         Column(modifier = modifier.fillMaxSize().padding(16.dp)) {
@@ -33,20 +47,29 @@ fun BlocksScreen(
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(8.dp),
+                                .padding(vertical = 4.dp),
                             elevation = CardDefaults.cardElevation(4.dp)
                         ) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(12.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                // show app name and duration stored in DB
-                                Text("${app.appName} (${app.durationMinutes} mins)")
-                                IconButton(
-                                    onClick = { viewModel.deleteApp(app) } // delete expects BlockedApp
-                                ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    AsyncImage(
+                                        model = app.getIconUri(context),
+                                        contentDescription = app.appName,
+                                        modifier = Modifier
+                                            .size(48.dp)
+                                            .padding(end = 8.dp)
+                                    )
+
+                                    Text("${app.appName} (${app.durationMinutes} mins)")
+                                }
+
+                                IconButton(onClick = { viewModel.deleteApp(app) }) {
                                     Icon(Icons.Default.Delete, contentDescription = "Delete")
                                 }
                             }

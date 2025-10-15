@@ -1,1 +1,11 @@
-/build
+# Ignore virtual environment
+.venv/
+venv/
+
+# Ignore pyc files
+*.pyc
+__pycache__/
+
+# Ignore local env files
+.env
+app/focusbubble.db

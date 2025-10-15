@@ -13,12 +13,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.focusbubble.R
+import com.focusbubble.data.repository.SessionRepository
+import com.focusbubble.ui.utils.UserSession
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import android.util.Log
 
 @Composable
 fun FocusSessionScreen(
@@ -26,10 +31,33 @@ fun FocusSessionScreen(
     onStop: () -> Unit,
     onFinish: () -> Unit,
     onFocusSessionsClick: () -> Unit
-
 ) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
     var timeLeft by remember { mutableStateOf(durationMinutes * 60) }
     var isPaused by remember { mutableStateOf(false) }
+    var sessionId by remember { mutableStateOf<Int?>(null) }
+
+    // Create session on backend when screen opens
+    LaunchedEffect(Unit) {
+        val userId = UserSession.getUserId(context)
+        if (userId != -1) {
+            try {
+                val sessionRepo = SessionRepository()
+                val response = sessionRepo.startSession(userId, null, durationMinutes)
+
+                if (response.isSuccessful) {
+                    sessionId = response.body()?.id
+                    Log.d("FocusSession", "✅ Session created on backend: ID=$sessionId")
+                } else {
+                    Log.e("FocusSession", "❌ Failed to create session: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                Log.e("FocusSession", "❌ Error creating session", e)
+            }
+        }
+    }
 
     // Countdown logic
     LaunchedEffect(timeLeft, isPaused) {
@@ -37,16 +65,25 @@ fun FocusSessionScreen(
             delay(1000L)
             timeLeft--
             if (timeLeft == 0) {
+                // Stop session on backend
+                sessionId?.let { id ->
+                    scope.launch {
+                        try {
+                            val sessionRepo = SessionRepository()
+                            sessionRepo.stopSession(id)
+                            Log.d("FocusSession", "✅ Session stopped on backend")
+                        } catch (e: Exception) {
+                            Log.e("FocusSession", "❌ Error stopping session", e)
+                        }
+                    }
+                }
                 onFinish()
             }
         }
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-    ) {
-        // Background same as Dashboard
+    Box(modifier = Modifier.fillMaxSize()) {
+        // Background
         Image(
             painter = painterResource(id = R.drawable.dashboard_bg),
             contentDescription = "Background",
@@ -62,10 +99,9 @@ fun FocusSessionScreen(
             verticalArrangement = Arrangement.Center
         ) {
 
-            // Spacer to push content slightly up
             Spacer(modifier = Modifier.height(40.dp))
 
-            // Circle timer with white border
+            // Circle timer
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
@@ -91,23 +127,36 @@ fun FocusSessionScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Mascot image
+            // Mascot
             Image(
                 painter = painterResource(id = R.drawable.bubbly_icon),
                 contentDescription = "Mascot",
-                modifier = Modifier
-                    .size(120.dp)
+                modifier = Modifier.size(120.dp)
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Buttons row (Stop / Pause)
+            // Buttons
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 Button(
-                    onClick = onStop,
+                    onClick = {
+                        // Stop session on backend
+                        sessionId?.let { id ->
+                            scope.launch {
+                                try {
+                                    val sessionRepo = SessionRepository()
+                                    sessionRepo.stopSession(id)
+                                    Log.d("FocusSession", "✅ Session stopped")
+                                } catch (e: Exception) {
+                                    Log.e("FocusSession", "❌ Error stopping session", e)
+                                }
+                            }
+                        }
+                        onStop()
+                    },
                     modifier = Modifier
                         .weight(1f)
                         .height(56.dp)
@@ -122,7 +171,26 @@ fun FocusSessionScreen(
                 }
 
                 Button(
-                    onClick = { isPaused = !isPaused },
+                    onClick = {
+                        isPaused = !isPaused
+                        // Pause/Resume on backend
+                        sessionId?.let { id ->
+                            scope.launch {
+                                try {
+                                    val sessionRepo = SessionRepository()
+                                    if (isPaused) {
+                                        sessionRepo.pauseSession(id)
+                                        Log.d("FocusSession", "⏸️ Session paused")
+                                    } else {
+                                        sessionRepo.resumeSession(id)
+                                        Log.d("FocusSession", "▶️ Session resumed")
+                                    }
+                                } catch (e: Exception) {
+                                    Log.e("FocusSession", "❌ Error pausing/resuming", e)
+                                }
+                            }
+                        }
+                    },
                     modifier = Modifier
                         .weight(1f)
                         .height(56.dp)

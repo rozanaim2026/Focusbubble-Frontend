@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "280392969011",
+    "project_id": "focus-bubble-new",
+    "storage_bucket": "focus-bubble-new.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:280392969011:android:87dea7a09a417b372d2c46",
+        "android_client_info": {
+          "package_name": "com.focusbubble"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAm_w7vuI4OyQvmd5yUv2d_Zs1VzFg3gHg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

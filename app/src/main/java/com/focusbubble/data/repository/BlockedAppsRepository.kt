@@ -1,24 +1,39 @@
 package com.focusbubble.data.repository
 
-import com.focusbubble.data.api.RetrofitInstance
 import com.focusbubble.data.dao.BlockedAppDao
 import com.focusbubble.data.entities.BlockedApp
+import com.focusbubble.data.model.BlockedAppCreate
+import com.focusbubble.data.model.BlockedAppResponse
+import com.focusbubble.data.model.RefreshBlocksResponse
+import com.focusbubble.data.network.RetrofitClient
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import retrofit2.Response
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class BlockedAppsRepository(private val dao: BlockedAppDao) {
+@Singleton
+class BlockedAppsRepository @Inject constructor(
+    private val dao: BlockedAppDao
+) {
+    private val api = RetrofitClient.api
 
+    // Local database flow
     val blockedApps: Flow<List<BlockedApp>> = dao.getAllBlockedApps()
+
+    // ========== LOCAL DATABASE OPERATIONS ==========
 
     suspend fun addBlockedApp(app: BlockedApp) {
         // Save locally
         dao.insertBlockedApp(app)
 
-        // Sync to backend
+        // Sync to backend (optional - if you want to create individual blocks)
         withContext(Dispatchers.IO) {
             try {
-                RetrofitInstance.api.addBlockedApp(app)
+                // Note: Your backend expects userId, so you'll need to pass it
+                // For now, this is commented out - use createBlocksOnBackend instead
+                // RetrofitInstance.api.addBlockedApp(app)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -29,25 +44,100 @@ class BlockedAppsRepository(private val dao: BlockedAppDao) {
         dao.deleteBlockedApp(app)
         withContext(Dispatchers.IO) {
             try {
-                RetrofitInstance.api.deleteBlockedApp(app.id)
+                // Backend doesn't have individual delete - blocks expire automatically
+                // Or you can stop the session to deactivate all blocks
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
     }
 
-    suspend fun refreshFromBackend() {
+    // ========== BACKEND API OPERATIONS ==========
+
+    /**
+     * Get active blocked apps from backend for a specific user
+     */
+    suspend fun getActiveBlocksFromBackend(userId: Int): Response<List<BlockedAppResponse>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                api.getActiveBlocks(userId)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Response.error(500, okhttp3.ResponseBody.create(null, ""))
+            }
+        }
+    }
+
+    /**
+     * Create blocked apps on backend (when starting a session)
+     */
+    suspend fun createBlocksOnBackend(
+        userId: Int,
+        blocks: List<BlockedAppCreate>
+    ): Response<List<BlockedAppResponse>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                api.createBlocks(userId, blocks)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Response.error(500, okhttp3.ResponseBody.create(null, ""))
+            }
+        }
+    }
+
+    /**
+     * Manually trigger backend to expire old blocks
+     */
+    suspend fun refreshBlocksOnBackend(): Response<RefreshBlocksResponse> {
+        return withContext(Dispatchers.IO) {
+            try {
+                api.refreshBlocks()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Response.error(500, okhttp3.ResponseBody.create(null, ""))
+            }
+        }
+    }
+
+    /**
+     * Sync backend blocks to local database
+     * Call this after starting a session to get the blocks created by backend
+     */
+    suspend fun syncFromBackend(userId: Int) {
         withContext(Dispatchers.IO) {
             try {
-                val response = RetrofitInstance.api.getBlockedApps()
+                android.util.Log.d("BlocksSync", "🔄 Syncing blocks for user $userId")
+                val response = getActiveBlocksFromBackend(userId)
+                android.util.Log.d("BlocksSync", "📡 Response: ${response.code()}")
                 if (response.isSuccessful) {
-                    response.body()?.let { apps ->
-                        apps.forEach { dao.insertBlockedApp(it) }
+                    response.body()?.let { backendBlocks ->
+                        android.util.Log.d("BlocksSync", "✅ Got ${backendBlocks.size} blocks from backend")
+                        // Convert backend blocks to local entities and save
+                        backendBlocks.forEach { backendBlock ->
+                            val localBlock = BlockedApp(
+                                packageName = backendBlock.packageName,
+                                appName = backendBlock.appName ?: backendBlock.packageName,
+                                durationMinutes = 25, // You can calculate from start/end time
+                                id = backendBlock.id
+                            )
+                            dao.insertBlockedApp(localBlock)
+                        }
                     }
+                } else {
+                    android.util.Log.e("BlocksSync", "❌ Failed: ${response.code()}")
                 }
             } catch (e: Exception) {
+                android.util.Log.e("BlocksSync", "❌ Error syncing blocks", e)
                 e.printStackTrace()
             }
         }
+    }
+
+    /**
+     * Legacy method - kept for backward compatibility
+     */
+    suspend fun refreshFromBackend() {
+        // This can now call syncFromBackend with a userId
+        // You'll need to store userId somewhere (SharedPreferences, etc.)
     }
 }

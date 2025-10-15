@@ -24,29 +24,44 @@ import com.focusbubble.ui.viewmodel.BlockedAppsViewModel
 import com.focusbubble.ui.viewmodel.FocusStatsViewModel
 import com.jakewharton.threetenabp.AndroidThreeTen
 import dagger.hilt.android.AndroidEntryPoint
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInClient
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
     private val REQUEST_NOTIFICATION_PERMISSION = 1001
     private var startServiceAfterPermission = false
+    lateinit var googleSignInClient: GoogleSignInClient
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Initialize ThreeTen
         AndroidThreeTen.init(this)
 
-        val sharedPrefs = getSharedPreferences("user_prefs", MODE_PRIVATE)
+        // Google Sign-In setup
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestEmail()
+            .build()
+        googleSignInClient = GoogleSignIn.getClient(this, gso)
 
+        // Set Compose content
         setContent {
             FocusBubbleTheme {
                 Surface(color = MaterialTheme.colorScheme.background) {
-                    AppNavHost(sharedPrefs) { startFocusServiceIfPermissionGranted() }
+                    val sharedPrefs = getSharedPreferences("FocusBubblePrefs", Context.MODE_PRIVATE)
+                    AppNavHost(
+                        sharedPrefs = sharedPrefs,
+                        onStartFocusClick = { duration -> startFocusServiceIfPermissionGranted(duration) }
+                    )
                 }
             }
         }
     }
 
-    private fun startFocusServiceIfPermissionGranted() {
+    private fun startFocusServiceIfPermissionGranted(durationMinutes: Int = 25) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(
                     this,
@@ -59,15 +74,17 @@ class MainActivity : ComponentActivity() {
                     REQUEST_NOTIFICATION_PERMISSION
                 )
             } else {
-                startFocusService()
+                startFocusService(durationMinutes)
             }
         } else {
-            startFocusService()
+            startFocusService(durationMinutes)
         }
     }
 
-    private fun startFocusService() {
-        val serviceIntent = Intent(this, BlockerService::class.java)
+    private fun startFocusService(durationMinutes: Int = 25) {
+        val serviceIntent = Intent(this, BlockerService::class.java).apply {
+            putExtra("DURATION_MINUTES", durationMinutes)
+        }
         ContextCompat.startForegroundService(this, serviceIntent)
     }
 
@@ -97,7 +114,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppNavHost(
     sharedPrefs: android.content.SharedPreferences,
-    onStartFocusClick: () -> Unit
+    onStartFocusClick: (Int) -> Unit
 ) {
     val navController = rememberNavController()
     val blockedAppsViewModel: BlockedAppsViewModel = hiltViewModel()
@@ -128,14 +145,15 @@ fun AppNavHost(
             DashboardScreen(
                 userName = profileName,
                 navController = navController,
+                onMenuClick = { /* TODO: Handle menu click */ },
                 onStartFocusClick = { duration ->
                     focusStatsViewModel.addFocusTime(duration)
-                    onStartFocusClick() // Start service if permission granted
-                    navController.navigate("focusSession/$duration") // Navigate to FocusSessionScreen
+                    navController.navigate("focusSession/$duration")
                 },
                 onSchedulesClick = { navController.navigate("schedules") },
                 onChatsClick = { navController.navigate("chats") },
-                onBlocksClick = { navController.navigate("blocks") }
+                onBlocksClick = { navController.navigate("blocks") },
+                onQuotesClick = { navController.navigate("quotes") }
             )
         }
 
@@ -154,7 +172,10 @@ fun AppNavHost(
             )
         }
 
-        // FocusSessionScreen route
+        composable("quotes") {
+            QuotesScreen(onBackClick = { navController.popBackStack() })
+        }
+
         composable("focusSession/{duration}") { backStackEntry ->
             val duration = backStackEntry.arguments?.getString("duration")?.toInt() ?: 25
             FocusSessionScreen(
@@ -162,7 +183,6 @@ fun AppNavHost(
                 onStop = { navController.popBackStack() },
                 onFinish = { navController.popBackStack() },
                 onFocusSessionsClick = {
-                    // Clickable "Focus Sessions" text
                     navController.navigate("dashboard")
                 }
             )
