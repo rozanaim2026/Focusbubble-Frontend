@@ -10,9 +10,12 @@ object RetrofitClient {
 
     // CHANGE THIS BASED ON YOUR SETUP:
     // - Android Emulator: "http://10.0.2.2:8000/"
-    // - Physical Device: "http://192.168.1.7:8000/" (Your Mac's IP)
-    private const val BASE_URL = "http://192.168.1.7:8000/"
+    // - Physical Device: "http://192.168.31.161:8000/" (Your Mac's IP)
+private const val BASE_URL = "http://192.168.31.161:8000/"
 
+init {
+    android.util.Log.d("RetrofitClient", "🌐 BASE_URL = $BASE_URL")
+}
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
     }

@@ -22,7 +22,7 @@ interface FocusBubbleApi {
 }
 
 object RetrofitClient {
-    private const val BASE_URL = "http://192.168.31.203:8000/api/" // Updated to use your local IP
+    private const val BASE_URL = "http://192.168.31.161:8000/" // Physical Device
 
     private val retrofit: Retrofit by lazy {
         Retrofit.Builder()
