@@ -1,20 +1,79 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/block_overlay_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:gravity="center"
-    android:background="#CC000000"
-    android:padding="24dp">
+    android:background="#DD000000"
+    android:padding="32dp">
+
+    <TextView
+        android:id="@+id/tv_blocked_app"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="This app is blocked"
+        android:textSize="20sp"
+        android:textColor="#FFCCCC"
+        android:gravity="center"
+        android:layout_marginBottom="8dp" />
 
     <TextView
         android:id="@+id/blockMessage"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Focus Mode Active!"
-        android:textSize="24sp"
+        android:textSize="28sp"
         android:textColor="@android:color/white"
+        android:textStyle="bold"
         android:gravity="center"
-        android:padding="16dp" />
+        android:layout_marginBottom="24dp" />
+
+    <TextView
+        android:id="@+id/tv_timer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="25:00"
+        android:textSize="48sp"
+        android:textColor="#4CAF50"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginBottom="16dp" />
+
+    <TextView
+        android:id="@+id/tv_remaining"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="remaining"
+        android:textSize="16sp"
+        android:textColor="#AAAAAA"
+        android:gravity="center"
+        android:layout_marginBottom="48dp" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center">
+
+        <Button
+            android:id="@+id/btn_continue_focus"
+            android:layout_width="240dp"
+            android:layout_height="56dp"
+            android:text="Continue with Focus"
+            android:textSize="16sp"
+            android:textColor="@android:color/white"
+            android:backgroundTint="#4CAF50"
+            android:layout_marginBottom="16dp"/>
+
+        <Button
+            android:id="@+id/btn_emergency_use"
+            android:layout_width="240dp"
+            android:layout_height="56dp"
+            android:text="Emergency Use"
+            android:textSize="16sp"
+            android:textColor="@android:color/white"
+            android:backgroundTint="#FF5722"/>
+    </LinearLayout>
 
 </LinearLayout>

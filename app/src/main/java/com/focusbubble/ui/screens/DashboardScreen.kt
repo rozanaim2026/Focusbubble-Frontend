@@ -12,6 +12,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.Manifest
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -26,6 +29,7 @@ import com.focusbubble.ui.components.BottomNavBar
 import com.focusbubble.ui.sheets.EditOptionsSheet
 import com.focusbubble.ui.viewmodel.BlockedAppsViewModel
 import com.focusbubble.ui.viewmodel.FocusStatsViewModel
+import com.focusbubble.ui.utils.PermissionHelper
 
 @Composable
 fun DashboardScreen(
@@ -41,8 +45,17 @@ fun DashboardScreen(
 
 {
 
+    val context = LocalContext.current
     var selectedTab by remember { mutableStateOf("Dashboard") }
     var showEditOptionsSheet by remember { mutableStateOf(false) }
+    var showPermissionsDialog by remember { mutableStateOf(false) }
+    
+    // Notification permission launcher (Android 13+)
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        android.util.Log.d("DashboardScreen", "Notification permission: $isGranted")
+    }
 
     val blockedAppsViewModel: BlockedAppsViewModel = hiltViewModel()
     val focusStatsViewModel: FocusStatsViewModel = hiltViewModel()
@@ -93,12 +106,43 @@ fun DashboardScreen(
                         .padding(bottom = 12.dp)
                 )
 
-                // Start Focus Session Button (direct navigation)
+                // Start Focus Session Button - with step-by-step permission check
                 Button(
                     onClick = {
-                        val duration = blockedAppsViewModel.selectedDurationMinutes.value
-                        focusStatsViewModel.addFocusTime(duration)
-                        navController.navigate("focusSession/$duration")
+                        // Step-by-step permission flow:
+                        // 1️⃣ Check notification permission FIRST (Android 13+)
+                        val hasNotification = PermissionHelper.hasNotificationPermission(context)
+                        val hasOverlay = PermissionHelper.hasOverlayPermission(context)
+                        val hasUsageStats = PermissionHelper.hasUsageStatsPermission(context)
+                        
+                        android.util.Log.d("DashboardScreen", "Permission check - Notification: $hasNotification, Overlay: $hasOverlay, Usage: $hasUsageStats")
+                        
+                        when {
+                            // If notification not granted (Android 13+), ask for it FIRST
+                            !hasNotification -> {
+                                android.util.Log.d("DashboardScreen", "Notification permission missing, requesting")
+                                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                }
+                            }
+                            // If overlay not granted, ask for it
+                            !hasOverlay -> {
+                                android.util.Log.d("DashboardScreen", "Overlay permission missing, showing dialog")
+                                showPermissionsDialog = true
+                            }
+                            // If overlay granted but usage not granted, ask for usage
+                            !hasUsageStats -> {
+                                android.util.Log.d("DashboardScreen", "Usage permission missing, showing dialog")
+                                showPermissionsDialog = true
+                            }
+                            // If all granted, start session!
+                            else -> {
+                                android.util.Log.d("DashboardScreen", "All permissions granted, starting session")
+                                val duration = blockedAppsViewModel.selectedDurationMinutes.value
+                                focusStatsViewModel.addFocusTime(duration)
+                                navController.navigate("focusSession/$duration")
+                            }
+                        }
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -121,6 +165,19 @@ fun DashboardScreen(
             EditOptionsSheet(
                 viewModel = blockedAppsViewModel,
                 onDismiss = { showEditOptionsSheet = false }
+            )
+        }
+
+        if (showPermissionsDialog) {
+            PermissionsCheckDialog(
+                onAllPermissionsGranted = {
+                    showPermissionsDialog = false
+                    // Start session now that permissions are granted
+                    val duration = blockedAppsViewModel.selectedDurationMinutes.value
+                    focusStatsViewModel.addFocusTime(duration)
+                    navController.navigate("focusSession/$duration")
+                },
+                onDismiss = { showPermissionsDialog = false }
             )
         }
 

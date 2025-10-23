@@ -2,6 +2,7 @@ package com.focusbubble;
 
 import com.focusbubble.di.AppModule;
 import com.focusbubble.ui.viewmodel.BlockedAppsViewModel_HiltModules;
+import com.focusbubble.ui.viewmodel.ScheduleViewModel_HiltModules;
 import dagger.Binds;
 import dagger.Component;
 import dagger.Module;
@@ -157,7 +158,8 @@ public final class FocusBubbleApplication_HiltComponents {
           ActivityCBuilderModule.class,
           ViewModelCBuilderModule.class,
           HiltWrapper_ActivityRetainedComponentManager_LifecycleModule.class,
-          HiltWrapper_SavedStateHandleModule.class
+          HiltWrapper_SavedStateHandleModule.class,
+          ScheduleViewModel_HiltModules.KeyModule.class
       }
   )
   @ActivityRetainedScoped
@@ -194,7 +196,8 @@ public final class FocusBubbleApplication_HiltComponents {
   @Subcomponent(
       modules = {
           BlockedAppsViewModel_HiltModules.BindsModule.class,
-          HiltWrapper_HiltViewModelFactory_ViewModelModule.class
+          HiltWrapper_HiltViewModelFactory_ViewModelModule.class,
+          ScheduleViewModel_HiltModules.BindsModule.class
       }
   )
   @ViewModelScoped

@@ -8,12 +8,14 @@ import android.net.Uri
 import android.provider.Settings
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,50 +37,89 @@ fun BlockAppsSheet(
     val context = LocalContext.current
     val pm = context.packageManager
 
+    // Load previously blocked apps from database
+    val blockedApps by viewModel.blockedApps.collectAsState()
+    
     var allApps by remember { mutableStateOf<List<UserAppInfo>>(emptyList()) }
-    var selectedPackages by remember { mutableStateOf(viewModel.blockedApps.value.map { it.packageName }.toSet()) }
+    var selectedPackages by remember { mutableStateOf(setOf<String>()) }
+    var searchQuery by remember { mutableStateOf("") }
+    var showPermissionDialog by remember { mutableStateOf(false) }
+    var permissionAsked by remember { mutableStateOf(false) }
+    
+    // Initialize selectedPackages with previously blocked apps
+    LaunchedEffect(blockedApps) {
+        val previouslySelected = blockedApps.map { it.packageName }.toSet()
+        selectedPackages = previouslySelected
+        Log.d("BlockAppsSheet", "Initialized with ${previouslySelected.size} previously blocked apps: $previouslySelected")
+    }
+    
+    // Filter apps based on search query
+    val filteredApps = remember(allApps, searchQuery) {
+        if (searchQuery.isBlank()) {
+            allApps
+        } else {
+            allApps.filter { it.appName.contains(searchQuery, ignoreCase = true) }
+        }
+    }
 
     LaunchedEffect(Unit) {
-        // Define popular distracting apps
-        val popularDistractingApps = listOf(
-            "com.instagram.android", // Instagram
-            "com.snapchat.android",  // Snapchat
-            "com.facebook.katana",   // Facebook
-            "com.facebook.orca",     // Messenger
-            "com.twitter.android",   // Twitter/X
-            "com.youtube.android",   // YouTube
-            "com.tiktok.android",    // TikTok
-            "com.reddit.frontpage",  // Reddit
-            "com.pinterest",         // Pinterest
-            "com.netflix.mediaclient", // Netflix
-            "com.spotify.music",     // Spotify
-            "com.discord",           // Discord
-            "com.whatsapp",          // WhatsApp
-            "com.telegram.ui",       // Telegram
-        )
-
         val apps = mutableListOf<UserAppInfo>()
         val pm = context.packageManager
 
-        // Get only installed popular distracting apps
-        popularDistractingApps.forEach { packageName ->
-            try {
-                val appInfo = pm.getApplicationInfo(packageName, 0)
-                val drawable = pm.getApplicationIcon(packageName)
-                apps.add(
-                    UserAppInfo(
-                        appName = appInfo.loadLabel(pm).toString(),
-                        packageName = packageName,
-                        drawable = drawable,
-                        iconBitmap = drawableToImageBitmap(drawable)
-                    )
-                )
-            } catch (e: PackageManager.NameNotFoundException) {
-                // App not installed, skip it
+        // Get ALL installed applications with QUERY_ALL_PACKAGES permission
+        val installedApps = pm.getInstalledApplications(PackageManager.GET_META_DATA)
+        
+        Log.d("BlockAppsSheet", "Total installed apps: ${installedApps.size}")
+        
+        installedApps
+            .filter { appInfo ->
+                val pkg = appInfo.packageName
+                
+                // ONLY show user-installed apps (NOT system apps)
+                // System apps have FLAG_SYSTEM flag set
+                val isUserInstalled = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) == 0
+                
+                // Also check for updated system apps (like pre-installed YouTube, Instagram on some phones)
+                val isUpdatedSystemApp = (appInfo.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0
+                
+                // Check if app has a launcher icon (can be launched by user)
+                val hasLauncherIntent = try {
+                    pm.getLaunchIntentForPackage(pkg) != null
+                } catch (e: Exception) {
+                    false
+                }
+                
+                // Exclude our own app
+                val isOwnApp = pkg == context.packageName
+                
+                // Include if:
+                // 1. User-installed app OR updated system app (like pre-installed social media)
+                // 2. Has launcher icon (can be opened by user)
+                // 3. Not our own app
+                (isUserInstalled || isUpdatedSystemApp) && hasLauncherIntent && !isOwnApp
             }
-        }
+            .sortedBy { it.loadLabel(pm).toString().lowercase() }
+            .forEach { appInfo ->
+                try {
+                    val label = appInfo.loadLabel(pm).toString()
+                    val drawable = pm.getApplicationIcon(appInfo.packageName)
+                    
+                    apps.add(
+                        UserAppInfo(
+                            appName = label,
+                            packageName = appInfo.packageName,
+                            drawable = drawable,
+                            iconBitmap = drawableToImageBitmap(drawable)
+                        )
+                    )
+                    Log.d("BlockAppsSheet", "Added app: $label (${appInfo.packageName})")
+                } catch (e: Exception) {
+                    Log.w("BlockAppsSheet", "Failed to load app: ${appInfo.packageName}", e)
+                }
+            }
 
         allApps = apps
+        Log.d("BlockAppsSheet", "Loaded ${apps.size} apps to show")
     }
 
     ModalBottomSheet(
@@ -118,12 +159,36 @@ fun BlockAppsSheet(
                 Spacer(Modifier.height(16.dp))
                 Text("Select Apps to Block", fontSize = 20.sp, color = Color.White)
                 Spacer(Modifier.height(12.dp))
+                
+                // Search bar
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Search apps...", color = Color.Gray) },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedBorderColor = Color(0xFF3D8DFF),
+                        unfocusedBorderColor = Color.Gray
+                    ),
+                    singleLine = true
+                )
+                Spacer(Modifier.height(12.dp))
+                
+                // Show app count
+                Text(
+                    "${filteredApps.size} apps found",
+                    fontSize = 14.sp,
+                    color = Color.Gray
+                )
+                Spacer(Modifier.height(8.dp))
 
                 // Scrollable list
                 LazyColumn(
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    items(allApps) { app ->
+                    items(filteredApps) { app ->
                         val isSelected = selectedPackages.contains(app.packageName)
                         Row(
                             modifier = Modifier
@@ -148,13 +213,22 @@ fun BlockAppsSheet(
                             Switch(
                                 checked = isSelected,
                                 onCheckedChange = { checked ->
-                                    if (!Settings.canDrawOverlays(context)) {
-                                        val intent = Intent(
-                                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                                            Uri.parse("package:${context.packageName}")
-                                        )
-                                        context.startActivity(intent)
+                                    // If trying to select an app and permission not granted
+                                    if (checked && !Settings.canDrawOverlays(context)) {
+                                        // Show dialog only once (first time)
+                                        if (!permissionAsked) {
+                                            showPermissionDialog = true
+                                            permissionAsked = true
+                                        } else {
+                                            // Already asked once, just open settings
+                                            val intent = Intent(
+                                                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                                Uri.parse("package:${context.packageName}")
+                                            )
+                                            context.startActivity(intent)
+                                        }
                                     } else {
+                                        // Permission granted or deselecting app
                                         selectedPackages = if (checked) {
                                             selectedPackages + app.packageName
                                         } else {
@@ -170,6 +244,48 @@ fun BlockAppsSheet(
                 }
             }
         }
+    }
+    
+    // Permission Dialog
+    if (showPermissionDialog) {
+        AlertDialog(
+            onDismissRequest = { showPermissionDialog = false },
+            title = { 
+                Text(
+                    "Permission Required",
+                    color = Color.White
+                ) 
+            },
+            text = { 
+                Text(
+                    "FocusBubble needs permission to display over other apps to block distractions during your focus sessions.\n\nThis is essential for the app blocking feature to work.",
+                    color = Color.White
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showPermissionDialog = false
+                        // Open settings to grant permission
+                        val intent = Intent(
+                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                            Uri.parse("package:${context.packageName}")
+                        )
+                        context.startActivity(intent)
+                    }
+                ) {
+                    Text("Grant Permission", color = Color(0xFF3D8DFF))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showPermissionDialog = false }
+                ) {
+                    Text("Cancel", color = Color.Gray)
+                }
+            },
+            containerColor = Color(0xFF2C2C2C)
+        )
     }
 }
 

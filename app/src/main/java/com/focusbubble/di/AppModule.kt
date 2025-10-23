@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.focusbubble.data.AppDatabase
 import com.focusbubble.data.dao.BlockedAppDao
 import com.focusbubble.data.repository.BlockedAppsRepository
+import com.focusbubble.data.repository.ScheduleRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -35,5 +36,11 @@ object AppModule {
     @Singleton
     fun provideBlockedAppsRepository(dao: BlockedAppDao): BlockedAppsRepository {
         return BlockedAppsRepository(dao)
+    }
+
+    @Provides
+    @Singleton
+    fun provideScheduleRepository(): ScheduleRepository {
+        return ScheduleRepository()
     }
 }

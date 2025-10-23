@@ -9,11 +9,15 @@ import androidx.lifecycle.ViewModel;
 import com.focusbubble.data.AppDatabase;
 import com.focusbubble.data.dao.BlockedAppDao;
 import com.focusbubble.data.repository.BlockedAppsRepository;
+import com.focusbubble.data.repository.ScheduleRepository;
 import com.focusbubble.di.AppModule_ProvideBlockedAppDaoFactory;
 import com.focusbubble.di.AppModule_ProvideBlockedAppsRepositoryFactory;
 import com.focusbubble.di.AppModule_ProvideDatabaseFactory;
+import com.focusbubble.di.AppModule_ProvideScheduleRepositoryFactory;
 import com.focusbubble.ui.viewmodel.BlockedAppsViewModel;
 import com.focusbubble.ui.viewmodel.BlockedAppsViewModel_HiltModules;
+import com.focusbubble.ui.viewmodel.ScheduleViewModel;
+import com.focusbubble.ui.viewmodel.ScheduleViewModel_HiltModules;
 import dagger.hilt.android.ActivityRetainedLifecycle;
 import dagger.hilt.android.ViewModelLifecycle;
 import dagger.hilt.android.internal.builders.ActivityComponentBuilder;
@@ -34,6 +38,7 @@ import dagger.internal.DoubleCheck;
 import dagger.internal.IdentifierNameString;
 import dagger.internal.KeepFieldType;
 import dagger.internal.LazyClassKeyMap;
+import dagger.internal.MapBuilder;
 import dagger.internal.Preconditions;
 import dagger.internal.Provider;
 import java.util.Collections;
@@ -373,7 +378,7 @@ public final class DaggerFocusBubbleApplication_HiltComponents_SingletonC {
 
     @Override
     public Map<Class<?>, Boolean> getViewModelKeys() {
-      return LazyClassKeyMap.<Boolean>of(Collections.<String, Boolean>singletonMap(LazyClassKeyProvider.com_focusbubble_ui_viewmodel_BlockedAppsViewModel, BlockedAppsViewModel_HiltModules.KeyModule.provide()));
+      return LazyClassKeyMap.<Boolean>of(MapBuilder.<String, Boolean>newMapBuilder(2).put(LazyClassKeyProvider.com_focusbubble_ui_viewmodel_BlockedAppsViewModel, BlockedAppsViewModel_HiltModules.KeyModule.provide()).put(LazyClassKeyProvider.com_focusbubble_ui_viewmodel_ScheduleViewModel, ScheduleViewModel_HiltModules.KeyModule.provide()).build());
     }
 
     @Override
@@ -393,7 +398,12 @@ public final class DaggerFocusBubbleApplication_HiltComponents_SingletonC {
 
     @IdentifierNameString
     private static final class LazyClassKeyProvider {
+      static String com_focusbubble_ui_viewmodel_ScheduleViewModel = "com.focusbubble.ui.viewmodel.ScheduleViewModel";
+
       static String com_focusbubble_ui_viewmodel_BlockedAppsViewModel = "com.focusbubble.ui.viewmodel.BlockedAppsViewModel";
+
+      @KeepFieldType
+      ScheduleViewModel com_focusbubble_ui_viewmodel_ScheduleViewModel2;
 
       @KeepFieldType
       BlockedAppsViewModel com_focusbubble_ui_viewmodel_BlockedAppsViewModel2;
@@ -409,6 +419,8 @@ public final class DaggerFocusBubbleApplication_HiltComponents_SingletonC {
 
     private Provider<BlockedAppsViewModel> blockedAppsViewModelProvider;
 
+    private Provider<ScheduleViewModel> scheduleViewModelProvider;
+
     private ViewModelCImpl(SingletonCImpl singletonCImpl,
         ActivityRetainedCImpl activityRetainedCImpl, SavedStateHandle savedStateHandleParam,
         ViewModelLifecycle viewModelLifecycleParam) {
@@ -423,11 +435,12 @@ public final class DaggerFocusBubbleApplication_HiltComponents_SingletonC {
     private void initialize(final SavedStateHandle savedStateHandleParam,
         final ViewModelLifecycle viewModelLifecycleParam) {
       this.blockedAppsViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 0);
+      this.scheduleViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 1);
     }
 
     @Override
     public Map<Class<?>, javax.inject.Provider<ViewModel>> getHiltViewModelMap() {
-      return LazyClassKeyMap.<javax.inject.Provider<ViewModel>>of(Collections.<String, javax.inject.Provider<ViewModel>>singletonMap(LazyClassKeyProvider.com_focusbubble_ui_viewmodel_BlockedAppsViewModel, ((Provider) blockedAppsViewModelProvider)));
+      return LazyClassKeyMap.<javax.inject.Provider<ViewModel>>of(MapBuilder.<String, javax.inject.Provider<ViewModel>>newMapBuilder(2).put(LazyClassKeyProvider.com_focusbubble_ui_viewmodel_BlockedAppsViewModel, ((Provider) blockedAppsViewModelProvider)).put(LazyClassKeyProvider.com_focusbubble_ui_viewmodel_ScheduleViewModel, ((Provider) scheduleViewModelProvider)).build());
     }
 
     @Override
@@ -439,8 +452,13 @@ public final class DaggerFocusBubbleApplication_HiltComponents_SingletonC {
     private static final class LazyClassKeyProvider {
       static String com_focusbubble_ui_viewmodel_BlockedAppsViewModel = "com.focusbubble.ui.viewmodel.BlockedAppsViewModel";
 
+      static String com_focusbubble_ui_viewmodel_ScheduleViewModel = "com.focusbubble.ui.viewmodel.ScheduleViewModel";
+
       @KeepFieldType
       BlockedAppsViewModel com_focusbubble_ui_viewmodel_BlockedAppsViewModel2;
+
+      @KeepFieldType
+      ScheduleViewModel com_focusbubble_ui_viewmodel_ScheduleViewModel2;
     }
 
     private static final class SwitchingProvider<T> implements Provider<T> {
@@ -465,7 +483,10 @@ public final class DaggerFocusBubbleApplication_HiltComponents_SingletonC {
       public T get() {
         switch (id) {
           case 0: // com.focusbubble.ui.viewmodel.BlockedAppsViewModel 
-          return (T) new BlockedAppsViewModel(singletonCImpl.provideBlockedAppsRepositoryProvider.get());
+          return (T) new BlockedAppsViewModel(singletonCImpl.provideBlockedAppsRepositoryProvider.get(), ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
+
+          case 1: // com.focusbubble.ui.viewmodel.ScheduleViewModel 
+          return (T) new ScheduleViewModel(singletonCImpl.provideScheduleRepositoryProvider.get());
 
           default: throw new AssertionError(id);
         }
@@ -551,6 +572,8 @@ public final class DaggerFocusBubbleApplication_HiltComponents_SingletonC {
 
     private Provider<BlockedAppsRepository> provideBlockedAppsRepositoryProvider;
 
+    private Provider<ScheduleRepository> provideScheduleRepositoryProvider;
+
     private SingletonCImpl(ApplicationContextModule applicationContextModuleParam) {
       this.applicationContextModule = applicationContextModuleParam;
       initialize(applicationContextModuleParam);
@@ -565,6 +588,7 @@ public final class DaggerFocusBubbleApplication_HiltComponents_SingletonC {
     private void initialize(final ApplicationContextModule applicationContextModuleParam) {
       this.provideDatabaseProvider = DoubleCheck.provider(new SwitchingProvider<AppDatabase>(singletonCImpl, 1));
       this.provideBlockedAppsRepositoryProvider = DoubleCheck.provider(new SwitchingProvider<BlockedAppsRepository>(singletonCImpl, 0));
+      this.provideScheduleRepositoryProvider = DoubleCheck.provider(new SwitchingProvider<ScheduleRepository>(singletonCImpl, 2));
     }
 
     @Override
@@ -605,6 +629,9 @@ public final class DaggerFocusBubbleApplication_HiltComponents_SingletonC {
 
           case 1: // com.focusbubble.data.AppDatabase 
           return (T) AppModule_ProvideDatabaseFactory.provideDatabase(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
+
+          case 2: // com.focusbubble.data.repository.ScheduleRepository 
+          return (T) AppModule_ProvideScheduleRepositoryFactory.provideScheduleRepository();
 
           default: throw new AssertionError(id);
         }

@@ -4,15 +4,16 @@
 
     <!-- Permissions -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION"/>
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION"/>
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    
+    <!-- Permission to query all packages (required for Android 11+) -->
+    <!-- This is needed for app blocking/productivity features -->
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" tools:ignore="QueryAllPackagesPermission"/>
 
 
     <application
@@ -42,7 +43,23 @@
             android:name=".service.BlockerService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="mediaProjection|location" />
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="App monitoring and blocking for focus sessions" />
+        </service>
+
+        <!-- Block overlay service - Shows overlay window when blocked app detected -->
+        <service
+            android:name=".service.BlockOverlayService"
+            android:enabled="true"
+            android:exported="false" />
+
+        <!-- Floating timer widget service - Shows timer on home screen -->
+        <service
+            android:name=".service.FloatingTimerService"
+            android:enabled="true"
+            android:exported="false" />
 
         <!-- Overlay activity -->
         <activity
@@ -50,7 +67,11 @@
             android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
             android:excludeFromRecents="true"
             android:taskAffinity=""
-            android:finishOnTaskLaunch="true"/>
+            android:finishOnTaskLaunch="true"
+            android:exported="false"
+            android:launchMode="singleInstance"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"/>
 
         <!-- FileProvider for sharing cached app icons -->
         <provider

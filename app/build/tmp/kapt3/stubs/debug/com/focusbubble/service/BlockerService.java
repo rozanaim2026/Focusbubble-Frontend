@@ -3,26 +3,33 @@ package com.focusbubble.service;
 import android.app.*;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ServiceInfo;
 import android.graphics.Color;
 import android.os.*;
 import android.provider.Settings;
 import android.util.Log;
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
+import com.focusbubble.MainActivity;
 import com.focusbubble.ui.BlockOverlayActivity;
 import com.focusbubble.ui.utils.UserSession;
+import com.focusbubble.ui.utils.PermissionHelper;
 import android.app.usage.UsageStatsManager;
 import kotlinx.coroutines.*;
 import android.os.CountDownTimer;
-import com.focusbubble.data.model.BlockedAppResponse;
-import com.focusbubble.data.api.RetrofitClient;
+import com.focusbubble.data.entities.BlockedApp;
+import com.focusbubble.data.repository.BlockedAppsRepository;
+import com.focusbubble.data.AppDatabase;
+import com.focusbubble.data.dao.BlockedAppDao;
+import androidx.room.Room;
 
-@kotlin.Metadata(mv = {1, 9, 0}, k = 1, xi = 48, d1 = {"\u0000X\n\u0002\u0018\u0002\n\u0002\u0018\u0002\n\u0002\b\u0002\n\u0002\u0010 \n\u0002\u0018\u0002\n\u0000\n\u0002\u0010\u000e\n\u0002\b\u0002\n\u0002\u0010\u000b\n\u0000\n\u0002\u0010\b\n\u0000\n\u0002\u0010\t\n\u0000\n\u0002\u0018\u0002\n\u0000\n\u0002\u0018\u0002\n\u0000\n\u0002\u0018\u0002\n\u0000\n\u0002\u0010\u0002\n\u0002\b\u0006\n\u0002\u0018\u0002\n\u0000\n\u0002\u0018\u0002\n\u0002\b\u000b\u0018\u00002\u00020\u0001B\u0005\u00a2\u0006\u0002\u0010\u0002J\b\u0010\u0013\u001a\u00020\u0014H\u0002J\b\u0010\u0015\u001a\u00020\u0016H\u0002J\b\u0010\u0017\u001a\u00020\u0016H\u0002J\b\u0010\u0018\u001a\u00020\u0016H\u0002J\b\u0010\u0019\u001a\u00020\fH\u0002J\u0010\u0010\u001a\u001a\u00020\u00162\u0006\u0010\u001b\u001a\u00020\u0007H\u0002J\u0014\u0010\u001c\u001a\u0004\u0018\u00010\u001d2\b\u0010\u001e\u001a\u0004\u0018\u00010\u001fH\u0016J\b\u0010 \u001a\u00020\u0016H\u0016J\b\u0010!\u001a\u00020\u0016H\u0016J\"\u0010\"\u001a\u00020\f2\b\u0010\u001e\u001a\u0004\u0018\u00010\u001f2\u0006\u0010#\u001a\u00020\f2\u0006\u0010$\u001a\u00020\fH\u0016J\u0010\u0010%\u001a\u00020\u00162\u0006\u0010&\u001a\u00020\u000eH\u0002J\b\u0010\'\u001a\u00020\u0016H\u0002J\b\u0010(\u001a\u00020\u0016H\u0002J\b\u0010)\u001a\u00020\u0016H\u0002R\u0014\u0010\u0003\u001a\b\u0012\u0004\u0012\u00020\u00050\u0004X\u0082\u000e\u00a2\u0006\u0002\n\u0000R\u000e\u0010\u0006\u001a\u00020\u0007X\u0082D\u00a2\u0006\u0002\n\u0000R\u0010\u0010\b\u001a\u0004\u0018\u00010\u0007X\u0082\u000e\u00a2\u0006\u0002\n\u0000R\u000e\u0010\t\u001a\u00020\nX\u0082\u000e\u00a2\u0006\u0002\n\u0000R\u000e\u0010\u000b\u001a\u00020\fX\u0082D\u00a2\u0006\u0002\n\u0000R\u000e\u0010\r\u001a\u00020\u000eX\u0082\u000e\u00a2\u0006\u0002\n\u0000R\u000e\u0010\u000f\u001a\u00020\u0010X\u0082\u0004\u00a2\u0006\u0002\n\u0000R\u0010\u0010\u0011\u001a\u0004\u0018\u00010\u0012X\u0082\u000e\u00a2\u0006\u0002\n\u0000\u00a8\u0006*"}, d2 = {"Lcom/focusbubble/service/BlockerService;", "Landroid/app/Service;", "()V", "blockedApps", "", "Lcom/focusbubble/data/model/BlockedAppResponse;", "channelId", "", "currentBlockedApp", "isPaused", "", "notificationId", "", "remainingTime", "", "serviceScope", "Lkotlinx/coroutines/CoroutineScope;", "timer", "Landroid/os/CountDownTimer;", "buildNotification", "Landroid/app/Notification;", "checkForegroundApp", "", "createNotificationChannel", "fetchBlockedApps", "getCurrentUserId", "launchBlockOverlay", "packageName", "onBind", "Landroid/os/IBinder;", "intent", "Landroid/content/Intent;", "onCreate", "onDestroy", "onStartCommand", "flags", "startId", "startTimer", "timeMillis", "stopSession", "togglePauseResume", "updateNotification", "app_debug"})
+@kotlin.Metadata(mv = {1, 9, 0}, k = 1, xi = 48, d1 = {"\u0000^\n\u0002\u0018\u0002\n\u0002\u0018\u0002\n\u0002\b\u0002\n\u0002\u0010 \n\u0002\u0018\u0002\n\u0000\n\u0002\u0010\u000e\n\u0002\b\u0002\n\u0002\u0010\u000b\n\u0000\n\u0002\u0010\b\n\u0000\n\u0002\u0010\t\n\u0000\n\u0002\u0018\u0002\n\u0000\n\u0002\u0018\u0002\n\u0000\n\u0002\u0018\u0002\n\u0000\n\u0002\u0018\u0002\n\u0000\n\u0002\u0010\u0002\n\u0002\b\u0005\n\u0002\u0018\u0002\n\u0000\n\u0002\u0018\u0002\n\u0002\b\u000b\u0018\u00002\u00020\u0001B\u0005\u00a2\u0006\u0002\u0010\u0002J\b\u0010\u0015\u001a\u00020\u0016H\u0002J\b\u0010\u0017\u001a\u00020\u0018H\u0002J\b\u0010\u0019\u001a\u00020\u0018H\u0002J\u0010\u0010\u001a\u001a\u00020\u00182\u0006\u0010\u001b\u001a\u00020\u0007H\u0002J\b\u0010\u001c\u001a\u00020\u0018H\u0002J\u0014\u0010\u001d\u001a\u0004\u0018\u00010\u001e2\b\u0010\u001f\u001a\u0004\u0018\u00010 H\u0016J\b\u0010!\u001a\u00020\u0018H\u0016J\b\u0010\"\u001a\u00020\u0018H\u0016J\"\u0010#\u001a\u00020\f2\b\u0010\u001f\u001a\u0004\u0018\u00010 2\u0006\u0010$\u001a\u00020\f2\u0006\u0010%\u001a\u00020\fH\u0016J\u0010\u0010&\u001a\u00020\u00182\u0006\u0010\'\u001a\u00020\u000eH\u0002J\b\u0010(\u001a\u00020\u0018H\u0002J\b\u0010)\u001a\u00020\u0018H\u0002J\b\u0010*\u001a\u00020\u0018H\u0002R\u0014\u0010\u0003\u001a\b\u0012\u0004\u0012\u00020\u00050\u0004X\u0082\u000e\u00a2\u0006\u0002\n\u0000R\u000e\u0010\u0006\u001a\u00020\u0007X\u0082D\u00a2\u0006\u0002\n\u0000R\u0010\u0010\b\u001a\u0004\u0018\u00010\u0007X\u0082\u000e\u00a2\u0006\u0002\n\u0000R\u000e\u0010\t\u001a\u00020\nX\u0082\u000e\u00a2\u0006\u0002\n\u0000R\u000e\u0010\u000b\u001a\u00020\fX\u0082D\u00a2\u0006\u0002\n\u0000R\u000e\u0010\r\u001a\u00020\u000eX\u0082\u000e\u00a2\u0006\u0002\n\u0000R\u000e\u0010\u000f\u001a\u00020\u0010X\u0082.\u00a2\u0006\u0002\n\u0000R\u000e\u0010\u0011\u001a\u00020\u0012X\u0082\u0004\u00a2\u0006\u0002\n\u0000R\u0010\u0010\u0013\u001a\u0004\u0018\u00010\u0014X\u0082\u000e\u00a2\u0006\u0002\n\u0000\u00a8\u0006+"}, d2 = {"Lcom/focusbubble/service/BlockerService;", "Landroid/app/Service;", "()V", "blockedApps", "", "Lcom/focusbubble/data/entities/BlockedApp;", "channelId", "", "currentBlockedApp", "isPaused", "", "notificationId", "", "remainingTime", "", "repository", "Lcom/focusbubble/data/repository/BlockedAppsRepository;", "serviceScope", "Lkotlinx/coroutines/CoroutineScope;", "timer", "Landroid/os/CountDownTimer;", "buildNotification", "Landroid/app/Notification;", "checkForegroundApp", "", "createNotificationChannel", "launchBlockOverlay", "packageName", "loadBlockedApps", "onBind", "Landroid/os/IBinder;", "intent", "Landroid/content/Intent;", "onCreate", "onDestroy", "onStartCommand", "flags", "startId", "startTimer", "timeMillis", "stopSession", "togglePauseResume", "updateNotification", "app_debug"})
 public final class BlockerService extends android.app.Service {
     @org.jetbrains.annotations.NotNull()
     private final kotlinx.coroutines.CoroutineScope serviceScope = null;
+    private com.focusbubble.data.repository.BlockedAppsRepository repository;
     @org.jetbrains.annotations.NotNull()
-    private java.util.List<com.focusbubble.data.model.BlockedAppResponse> blockedApps;
+    private java.util.List<com.focusbubble.data.entities.BlockedApp> blockedApps;
     @org.jetbrains.annotations.Nullable()
     private java.lang.String currentBlockedApp;
     private boolean isPaused = false;
@@ -77,11 +84,7 @@ public final class BlockerService extends android.app.Service {
     private final void createNotificationChannel() {
     }
     
-    private final void fetchBlockedApps() {
-    }
-    
-    private final int getCurrentUserId() {
-        return 0;
+    private final void loadBlockedApps() {
     }
     
     private final void checkForegroundApp() {

@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.focusbubble.app-mergeDebugResources-78:/values-watch-v20/values-watch-v20.xml",
+            "outputFile": "com.focusbubble.app-mergeDebugResources-79:/values-watch-v20/values-watch-v20.xml",
             "map": [
                 {
                     "source": "/Users/apple/.gradle/caches/transforms-4/04c61e39054d9a8dcd4aa559e9ad2cef/transformed/play-services-auth-21.2.0/res/values-watch-v20/values.xml",

@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.focusbubble.app-mergeDebugResources-78:/values-en-rGB/values-en-rGB.xml",
+            "outputFile": "com.focusbubble.app-mergeDebugResources-79:/values-en-rGB/values-en-rGB.xml",
             "map": [
                 {
                     "source": "/Users/apple/.gradle/caches/transforms-4/97f395cc85791faab7dfc5e0e5cb28cb/transformed/browser-1.4.0/res/values-en-rGB/values-en-rGB.xml",

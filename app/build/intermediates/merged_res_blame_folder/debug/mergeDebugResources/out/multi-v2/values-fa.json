@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.focusbubble.app-mergeDebugResources-78:/values-fa/values-fa.xml",
+            "outputFile": "com.focusbubble.app-mergeDebugResources-79:/values-fa/values-fa.xml",
             "map": [
                 {
                     "source": "/Users/apple/.gradle/caches/transforms-4/b889a8d111fe1bc7ca10651715e0f6d1/transformed/credentials-1.2.0-rc01/res/values-fa/values-fa.xml",

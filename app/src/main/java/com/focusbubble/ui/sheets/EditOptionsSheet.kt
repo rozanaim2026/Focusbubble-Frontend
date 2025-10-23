@@ -23,8 +23,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.focusbubble.ui.viewmodel.BlockedAppsViewModel
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 // Enum for subsheets
 private enum class Subsheet { Duration, BlockApps, Quotes }
@@ -39,37 +37,29 @@ fun EditOptionsSheet(
 
     // --- States ---
     var activeSubsheet by remember { mutableStateOf<Subsheet?>(null) }
-    var selectedDurationMinutes by remember { mutableStateOf<Int?>(null) }
+    val currentDuration by viewModel.selectedDurationMinutes.collectAsState()
     var selectedQuotes by remember { mutableStateOf<Set<String>>(emptySet()) }
 
-    val durationDisplay = remember(selectedDurationMinutes) {
-        selectedDurationMinutes?.let {
-            if (it >= 60) {
-                val h = it / 60
-                val m = it % 60
-                if (m == 0) "${h} hr" else "${h} hr ${m} min"
-            } else {
-                "$it min"
-            }
-        } ?: "Set duration"
+    val durationDisplay = remember(currentDuration) {
+        if (currentDuration >= 60) {
+            val h = currentDuration / 60
+            val m = currentDuration % 60
+            if (m == 0) "${h} hr" else "${h} hr ${m} min"
+        } else {
+            "$currentDuration min"
+        }
     }
 
-    // --- Blocked apps icons ---
+    // --- Blocked apps icons from blockedAppsUi (already has icons loaded) ---
     val blockedApps by viewModel.blockedApps.collectAsState()
-    var blockedIcons by remember { mutableStateOf<List<BitmapPainter>>(emptyList()) }
-
-    LaunchedEffect(blockedApps) {
-        withContext(Dispatchers.IO) {
-            val pm = context.packageManager
-            val icons = blockedApps.mapNotNull {
-                try {
-                    val drawable: Drawable = pm.getApplicationIcon(it.packageName)
-                    BitmapPainter(drawable.toBitmap().asImageBitmap())
-                } catch (_: Exception) {
-                    null
-                }
+    val blockedAppsUi by viewModel.blockedAppsUi.collectAsState()
+    
+    // Use icons from blockedAppsUi which already has iconBitmap loaded
+    val blockedIcons = remember(blockedAppsUi) {
+        blockedAppsUi.mapNotNull { app ->
+            app.iconBitmap?.let { bitmap ->
+                BitmapPainter(bitmap)
             }
-            blockedIcons = icons
         }
     }
 
@@ -99,8 +89,9 @@ fun EditOptionsSheet(
 
                 // Blocked Apps
                 EditRowWithIcons(
-                    label = "Blocked Apps",
-                    icons = blockedIcons,
+                    label = if (blockedApps.isEmpty()) "Block Apps" else "Blocked Apps",
+                    count = blockedApps.size,
+                    icons = blockedIcons.take(3), // Show max 3 icons
                     icon = Icons.Filled.Block
                 ) { activeSubsheet = Subsheet.BlockApps }
 
@@ -132,11 +123,11 @@ fun EditOptionsSheet(
     // --- SUBSHEET HANDLING ---
     when (activeSubsheet) {
         Subsheet.Duration -> DurationPickerBottomSheet(
-            initialHours = selectedDurationMinutes?.div(60) ?: 0,
-            initialMinutes = selectedDurationMinutes?.rem(60) ?: 0,
+            initialHours = currentDuration / 60,
+            initialMinutes = currentDuration % 60,
             onDismiss = { activeSubsheet = null },
             onConfirm = { h, m ->
-                selectedDurationMinutes = h * 60 + m
+                viewModel.setSelectedDuration(h * 60 + m)
                 activeSubsheet = null
             }
         )
@@ -184,6 +175,7 @@ fun EditRow(
 @Composable
 fun EditRowWithIcons(
     label: String,
+    count: Int = 0,
     icons: List<BitmapPainter>,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     onClick: () -> Unit
@@ -199,15 +191,32 @@ fun EditRowWithIcons(
         Icon(icon, contentDescription = null, tint = Color.White)
         Spacer(Modifier.width(12.dp))
         Text(label, color = Color.White, fontSize = 16.sp, modifier = Modifier.weight(1f))
-        LazyRow {
-            items(icons) { painter ->
-                Image(
-                    painter = painter,
-                    contentDescription = null,
-                    modifier = Modifier.size(28.dp).padding(end = 4.dp)
-                )
+        
+        // Show icons if available
+        if (icons.isNotEmpty()) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                icons.forEach { painter ->
+                    Image(
+                        painter = painter,
+                        contentDescription = null,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+                // Show count if there are selected apps
+                if (count > 0) {
+                    Text(
+                        text = "($count)",
+                        color = Color.LightGray,
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(start = 4.dp)
+                    )
+                }
             }
         }
+        
         Spacer(Modifier.width(8.dp))
         Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = Color.White)
     }

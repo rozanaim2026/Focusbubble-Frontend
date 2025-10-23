@@ -1,5 +1,6 @@
 package com.focusbubble.ui.viewmodel;
 
+import android.content.Context;
 import com.focusbubble.data.repository.BlockedAppsRepository;
 import dagger.internal.DaggerGenerated;
 import dagger.internal.Factory;
@@ -9,7 +10,7 @@ import javax.annotation.processing.Generated;
 import javax.inject.Provider;
 
 @ScopeMetadata
-@QualifierMetadata
+@QualifierMetadata("dagger.hilt.android.qualifiers.ApplicationContext")
 @DaggerGenerated
 @Generated(
     value = "dagger.internal.codegen.ComponentProcessor",
@@ -25,21 +26,26 @@ import javax.inject.Provider;
 public final class BlockedAppsViewModel_Factory implements Factory<BlockedAppsViewModel> {
   private final Provider<BlockedAppsRepository> repositoryProvider;
 
-  public BlockedAppsViewModel_Factory(Provider<BlockedAppsRepository> repositoryProvider) {
+  private final Provider<Context> contextProvider;
+
+  public BlockedAppsViewModel_Factory(Provider<BlockedAppsRepository> repositoryProvider,
+      Provider<Context> contextProvider) {
     this.repositoryProvider = repositoryProvider;
+    this.contextProvider = contextProvider;
   }
 
   @Override
   public BlockedAppsViewModel get() {
-    return newInstance(repositoryProvider.get());
+    return newInstance(repositoryProvider.get(), contextProvider.get());
   }
 
   public static BlockedAppsViewModel_Factory create(
-      Provider<BlockedAppsRepository> repositoryProvider) {
-    return new BlockedAppsViewModel_Factory(repositoryProvider);
+      Provider<BlockedAppsRepository> repositoryProvider, Provider<Context> contextProvider) {
+    return new BlockedAppsViewModel_Factory(repositoryProvider, contextProvider);
   }
 
-  public static BlockedAppsViewModel newInstance(BlockedAppsRepository repository) {
-    return new BlockedAppsViewModel(repository);
+  public static BlockedAppsViewModel newInstance(BlockedAppsRepository repository,
+      Context context) {
+    return new BlockedAppsViewModel(repository, context);
   }
 }

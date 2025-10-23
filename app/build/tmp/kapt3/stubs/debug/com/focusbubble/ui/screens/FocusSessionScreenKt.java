@@ -1,5 +1,10 @@
 package com.focusbubble.ui.screens;
 
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.widget.Toast;
 import androidx.compose.foundation.layout.*;
 import androidx.compose.material3.*;
 import androidx.compose.runtime.*;
@@ -9,8 +14,11 @@ import androidx.compose.ui.graphics.StrokeCap;
 import androidx.compose.ui.graphics.drawscope.Stroke;
 import androidx.compose.ui.layout.ContentScale;
 import androidx.compose.ui.text.font.FontWeight;
+import androidx.core.content.ContextCompat;
 import com.focusbubble.R;
 import com.focusbubble.data.repository.SessionRepository;
+import com.focusbubble.service.BlockerService;
+import com.focusbubble.service.SessionStateManager;
 import com.focusbubble.ui.utils.UserSession;
 import android.util.Log;
 

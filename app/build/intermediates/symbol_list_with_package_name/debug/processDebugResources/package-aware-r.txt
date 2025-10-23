@@ -3185,6 +3185,7 @@ id baseline
 id beginOnFirstDraw
 id beginning
 id blockMessage
+id block_overlay_root
 id blocking
 id bottom
 id bounce
@@ -3193,6 +3194,8 @@ id browser_actions_menu_item_icon
 id browser_actions_menu_item_text
 id browser_actions_menu_items
 id browser_actions_menu_view
+id btn_continue_focus
+id btn_emergency_use
 id buttonPanel
 id cancel_button
 id center
@@ -3535,6 +3538,7 @@ id textinput_placeholder
 id textinput_prefix_text
 id textinput_suffix_text
 id time
+id timer_text
 id title
 id titleDividerNoCustom
 id title_template
@@ -3553,6 +3557,9 @@ id transition_position
 id transition_scene_layoutid_cache
 id transition_transform
 id triangle
+id tv_blocked_app
+id tv_remaining
+id tv_timer
 id unchecked
 id uniform
 id unlabeled
@@ -3707,6 +3714,7 @@ layout design_navigation_menu
 layout design_navigation_menu_item
 layout design_text_input_end_icon
 layout design_text_input_start_icon
+layout floating_timer_widget
 layout ime_base_split_test_activity
 layout ime_secondary_split_test_activity
 layout m3_alert_dialog
