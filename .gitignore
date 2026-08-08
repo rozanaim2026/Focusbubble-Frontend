@@ -8,3 +8,10 @@ __pycache__/
 # Environment variables
 .env
 
+.gradle/
+.idea/
+build/
+app/build/
+*.apk
+*.log
+local.properties
