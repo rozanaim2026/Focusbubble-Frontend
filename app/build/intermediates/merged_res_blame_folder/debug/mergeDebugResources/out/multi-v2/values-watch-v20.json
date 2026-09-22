@@ -4,7 +4,7 @@
             "outputFile": "com.focusbubble.app-mergeDebugResources-79:/values-watch-v20/values-watch-v20.xml",
             "map": [
                 {
-                    "source": "/Users/apple/.gradle/caches/transforms-4/04c61e39054d9a8dcd4aa559e9ad2cef/transformed/play-services-auth-21.2.0/res/values-watch-v20/values.xml",
+                    "source": "/Users/apple/.gradle/caches/8.13/transforms/a10ce8b10ac84eb80cf62a8b2eddc3cb/transformed/play-services-auth-21.2.0/res/values-watch-v20/values.xml",
                     "from": {
                         "startLines": "4,5,6,7,8,9,10,11",
                         "startColumns": "0,0,0,0,0,0,0,0",
@@ -21,7 +21,7 @@
                     }
                 },
                 {
-                    "source": "/Users/apple/.gradle/caches/transforms-4/c863abe9cd2e3e50642a953e8e068519/transformed/appcompat-1.6.1/res/values-watch-v20/values-watch-v20.xml",
+                    "source": "/Users/apple/.gradle/caches/8.13/transforms/304f808552c2926806e1278049c2404d/transformed/appcompat-1.6.1/res/values-watch-v20/values-watch-v20.xml",
                     "from": {
                         "startLines": "2,5,8",
                         "startColumns": "4,4,4",

@@ -3184,8 +3184,6 @@ id barrier
 id baseline
 id beginOnFirstDraw
 id beginning
-id blockMessage
-id block_overlay_root
 id blocking
 id bottom
 id bounce
@@ -3194,8 +3192,6 @@ id browser_actions_menu_item_icon
 id browser_actions_menu_item_text
 id browser_actions_menu_items
 id browser_actions_menu_view
-id btn_continue_focus
-id btn_emergency_use
 id buttonPanel
 id cancel_button
 id center
@@ -3507,6 +3503,7 @@ id stop
 id stretch
 id submenuarrow
 id submit_area
+id subtitle_text
 id tabMode
 id tag_accessibility_actions
 id tag_accessibility_clickable_spans
@@ -3557,9 +3554,6 @@ id transition_position
 id transition_scene_layoutid_cache
 id transition_transform
 id triangle
-id tv_blocked_app
-id tv_remaining
-id tv_timer
 id unchecked
 id uniform
 id unlabeled
@@ -3695,7 +3689,6 @@ layout abc_search_dropdown_item_icons_2line
 layout abc_search_view
 layout abc_select_dialog_material
 layout abc_tooltip
-layout activity_block_overlay
 layout browser_actions_context_menu_page
 layout browser_actions_context_menu_row
 layout custom_dialog
@@ -5347,6 +5340,7 @@ styleable View android_theme android_focusable paddingEnd paddingStart theme
 styleable ViewBackgroundHelper android_background backgroundTint backgroundTintMode
 styleable ViewPager2 android_orientation
 styleable ViewStubCompat android_id android_layout android_inflatedId
+xml accessibility_service_config
 xml backup_rules
 xml data_extraction_rules
 xml file_paths

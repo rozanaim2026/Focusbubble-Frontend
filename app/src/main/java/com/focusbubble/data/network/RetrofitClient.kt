@@ -10,8 +10,8 @@ object RetrofitClient {
 
     // CHANGE THIS BASED ON YOUR SETUP:
     // - Android Emulator: "http://10.0.2.2:8000/"
-    // - Physical Device: "http://192.168.31.161:8000/" (Your Mac's IP)
-private const val BASE_URL = "http://192.168.31.161:8000/"
+    // - Physical Device: "https://focusbubble-backend.onrender.com/" (Your Mac's IP)
+private const val BASE_URL = "https://focusbubble-backend.onrender.com/"
 
 init {
     android.util.Log.d("RetrofitClient", "🌐 BASE_URL = $BASE_URL")
@@ -22,9 +22,9 @@ init {
 
     private val okHttpClient = OkHttpClient.Builder()
         .addInterceptor(loggingInterceptor)
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .writeTimeout(30, TimeUnit.SECONDS)
+        .connectTimeout(60, TimeUnit.SECONDS)
+        .readTimeout(60, TimeUnit.SECONDS)
+        .writeTimeout(60, TimeUnit.SECONDS)
         .build()
 
     private val retrofit = Retrofit.Builder()

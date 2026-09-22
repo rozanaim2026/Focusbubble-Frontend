@@ -14,6 +14,8 @@ import androidx.compose.ui.layout.ContentScale;
 import androidx.compose.ui.text.font.FontWeight;
 import androidx.compose.ui.text.style.TextAlign;
 import com.focusbubble.R;
+import com.focusbubble.data.AppDatabase;
+import com.focusbubble.data.entities.UserEntity;
 import com.focusbubble.data.model.TokenIn;
 import com.focusbubble.data.model.UserCreate;
 import com.focusbubble.data.network.RetrofitClient;

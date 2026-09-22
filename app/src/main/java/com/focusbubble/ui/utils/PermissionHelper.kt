@@ -10,7 +10,7 @@ import android.os.Build
 import androidx.core.content.ContextCompat
 
 object PermissionHelper {
-    
+
     /**
      * Check if app has Usage Stats permission
      * This is needed to detect which app is currently running
@@ -38,7 +38,7 @@ object PermissionHelper {
             false
         }
     }
-    
+
     /**
      * Open Usage Access settings so user can grant permission
      */
@@ -47,7 +47,7 @@ object PermissionHelper {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         context.startActivity(intent)
     }
-    
+
     /**
      * Check if app has Overlay permission
      * This is needed to show block screen over other apps
@@ -55,7 +55,7 @@ object PermissionHelper {
     fun hasOverlayPermission(context: Context): Boolean {
         return Settings.canDrawOverlays(context)
     }
-    
+
     /**
      * Open Overlay permission settings
      */
@@ -67,7 +67,31 @@ object PermissionHelper {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         context.startActivity(intent)
     }
-    
+
+    fun hasAccessibilityPermission(context: Context): Boolean {
+        val expectedComponentName = "${context.packageName}/${context.packageName}.FocusBubbleAccessibilityService"
+        val enabledServices = Settings.Secure.getString(
+            context.contentResolver,
+            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+        ) ?: return false
+
+        return enabledServices.split(':').any { it.equals(expectedComponentName, ignoreCase = true) }
+    }
+
+    fun hasNotificationListenerPermission(context: Context): Boolean {
+        val enabledListeners = Settings.Secure.getString(
+            context.contentResolver,
+            "enabled_notification_listeners"
+        ) ?: return false
+        return enabledListeners.contains(context.packageName)
+    }
+
+    fun requestNotificationListenerPermission(context: Context) {
+        val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        context.startActivity(intent)
+    }
+
     /**
      * Check if app has Notification permission (Android 13+)
      * Required for foreground service notifications

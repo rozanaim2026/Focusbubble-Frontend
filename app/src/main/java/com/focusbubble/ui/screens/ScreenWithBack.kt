@@ -20,6 +20,7 @@ fun ScreenWithBack(
     content: @Composable (Modifier) -> Unit
 ) {
     Scaffold(
+        containerColor = Color.Black,
         topBar = {
             CenterAlignedTopAppBar(
                 title = {

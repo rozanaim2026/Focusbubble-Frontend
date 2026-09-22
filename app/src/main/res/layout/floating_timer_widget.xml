@@ -3,33 +3,51 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:elevation="8dp"
-    app:cardCornerRadius="24dp"
+    android:elevation="6dp"
+    app:cardCornerRadius="18dp"
     app:cardBackgroundColor="#1A1A1A">
 
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:padding="12dp"
+        android:padding="8dp"
         android:gravity="center_vertical">
 
         <ImageView
-            android:layout_width="24dp"
-            android:layout_height="24dp"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
             android:src="@drawable/bubbly_icon"
-            android:layout_marginEnd="8dp" />
+            android:layout_marginEnd="6dp" />
 
-        <TextView
-            android:id="@+id/timer_text"
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Focus: 25:00"
-            android:textColor="@android:color/white"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:paddingStart="4dp"
-            android:paddingEnd="4dp" />
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/timer_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Focus: 25:00"
+                android:textColor="@android:color/white"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp" />
+
+            <TextView
+                android:id="@+id/subtitle_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Click to resume"
+                android:textColor="#CCFFFFFF"
+                android:textSize="10sp"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp"
+                android:visibility="gone" />
+
+        </LinearLayout>
 
     </LinearLayout>
 

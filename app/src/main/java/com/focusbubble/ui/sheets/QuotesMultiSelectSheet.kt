@@ -3,7 +3,8 @@ package com.focusbubble.ui.sheets
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -26,75 +27,78 @@ fun QuotesMultiSelectSheet(
     )
 
     val selectedState = remember(selectedQuotes) { mutableStateOf(selectedQuotes.toMutableSet()) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        containerColor = Color(0xFF1C1C1C),
+        sheetState = sheetState,
+        containerColor = Color.Black,
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .fillMaxHeight()
+                .padding(horizontal = 16.dp)
         ) {
-            Text("Select Quote Categories", fontSize = 20.sp, color = Color.White)
+            Spacer(Modifier.height(8.dp))
+            Text("Select Quote Categories", fontSize = 18.sp, color = Color.White)
             Spacer(Modifier.height(12.dp))
 
-            Column {
-                allQuotes.forEach { quote ->
-                    val isSelected = selectedState.value.contains(quote)
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp)
-                            .toggleable(
-                                value = isSelected,
-                                onValueChange = {
-                                    if (it) selectedState.value.add(quote)
-                                    else selectedState.value.remove(quote)
-                                    selectedState.value = selectedState.value.toMutableSet()
-                                }
+            // weight(1f) — list takes exactly the remaining space, Confirm sticks
+            // to the bottom naturally, same pattern as Select Apps to Block.
+            Box(modifier = Modifier.weight(1f)) {
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    items(allQuotes) { quote ->
+                        val isSelected = selectedState.value.contains(quote)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color(0xFF2C2C2C), RoundedCornerShape(12.dp))
+                                .padding(10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = quote,
+                                color = Color.White,
+                                fontSize = 14.sp,
+                                modifier = Modifier.weight(1f)
                             )
-                            .background(
-                                if (isSelected) Color(0xFF0D47A1) else Color(0xFF2C2C2C),
-                                RoundedCornerShape(12.dp)
+                            Switch(
+                                checked = isSelected,
+                                onCheckedChange = { checked ->
+                                    val updated = selectedState.value.toMutableSet()
+                                    if (checked) updated.add(quote) else updated.remove(quote)
+                                    selectedState.value = updated
+                                },
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = Color(0xFF3D8DFF),
+                                    checkedTrackColor = Color(0xFF0D47A1)
+                                )
                             )
-                            .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = quote,
-                            color = Color.White,
-                            fontSize = 16.sp,
-                            modifier = Modifier.weight(1f)
-                        )
-                        Switch(
-                            checked = isSelected,
-                            onCheckedChange = null,
-                            colors = SwitchDefaults.colors(
-                                checkedThumbColor = Color(0xFF2196F3),
-                                checkedTrackColor = Color(0xFF0D47A1)
-                            )
-                        )
+                        }
+                        Spacer(Modifier.height(8.dp))
                     }
                 }
             }
 
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(8.dp))
 
             Button(
                 onClick = { onConfirm(selectedState.value) },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .navigationBarsPadding(),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color.White,
                     contentColor = Color.Black
                 ),
-                shape = RoundedCornerShape(28.dp)
+                shape = RoundedCornerShape(24.dp)
             ) {
-                Text("Confirm")
+                Text("Confirm", fontSize = 14.sp)
             }
-
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(8.dp))
         }
     }
 }

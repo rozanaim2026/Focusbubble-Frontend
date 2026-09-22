@@ -68,4 +68,7 @@ interface FocusBubbleApi {
 
     @POST("refresh_blocks")
     suspend fun refreshBlocks(): Response<RefreshBlocksResponse>
+
+    @DELETE("users/{user_id}")
+    suspend fun deleteUser(@Path("user_id") userId: Int): Response<Unit>
 }

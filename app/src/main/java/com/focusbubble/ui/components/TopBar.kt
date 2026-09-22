@@ -1,13 +1,12 @@
 package com.focusbubble.ui.components
 
 import android.util.Log
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
@@ -16,54 +15,52 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.util.Calendar
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TopBar(
     userName: String,
     onMenuClick: () -> Unit
 ) {
-    TopAppBar(
-        title = {
-            Column {
-                // Greeting → smaller + slightly transparent
-                Text(
-                    text = greeting(),
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 23.sp,
-                    color = Color.White.copy(alpha = 0.8f)
-                )
-
-                // Username → larger + cursive "bakery style"
-                Text(
-                    text = if (userName.isNotBlank()) userName else "User",
-                    fontFamily = FontFamily.Cursive,
-                    fontSize = 30.sp,
-                    color = Color.White
-                )
-            }
-        },
-        actions = {
-            IconButton(onClick = onMenuClick) {
-                Icon(
-                    imageVector = Icons.Filled.Menu,
-                    contentDescription = "Menu",
-                    tint = Color.White // keep visible, no background
-                )
-            }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = Color.Transparent  // background fully transparent
-        ),
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp)
-    )
+            .padding(horizontal = 22.dp)
+            .padding(top = 14.dp, bottom = 6.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column {
+            // Greeting — smaller, subdued, sits comfortably above the name
+            Text(
+                text = greeting(),
+                fontWeight = FontWeight.Medium,
+                fontSize = 14.sp,
+                letterSpacing = 0.5.sp,
+                color = Color.White.copy(alpha = 0.7f)
+            )
+
+            Spacer(modifier = Modifier.height(2.dp))
+
+            // Name — the visual anchor of the bar
+            Text(
+                text = if (userName.isNotBlank()) userName else "User",
+                fontFamily = FontFamily.Cursive,
+                fontSize = 26.sp,
+                color = Color.White
+            )
+        }
+
+        IconButton(onClick = onMenuClick) {
+            Icon(
+                imageVector = Icons.Filled.Menu,
+                contentDescription = "Menu",
+                tint = Color.White
+            )
+        }
+    }
 }
 
 private fun greeting(): String {
     val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
-
-    // Debug log to see what your device thinks the hour is
     Log.d("GREETING", "Detected hour = $hour")
 
     return when (hour) {

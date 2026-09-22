@@ -20,15 +20,8 @@ drawable ic_launcher_foreground
 drawable ic_timer
 drawable outline_timer_24
 drawable welcome_background
-id blockMessage
-id block_overlay_root
-id btn_continue_focus
-id btn_emergency_use
+id subtitle_text
 id timer_text
-id tv_blocked_app
-id tv_remaining
-id tv_timer
-layout activity_block_overlay
 layout floating_timer_widget
 mipmap ic_launcher
 mipmap ic_launcher_round
@@ -42,6 +35,7 @@ string google_storage_bucket
 string project_id
 string server_client_id
 style Theme.FocusBubble.NoActionBar
+xml accessibility_service_config
 xml backup_rules
 xml data_extraction_rules
 xml file_paths

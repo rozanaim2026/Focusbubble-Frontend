@@ -20,8 +20,13 @@ class BlockedAppsRepository @Inject constructor(
     private val api = RetrofitClient.api
 
     // Local database flow
-    val blockedApps: Flow<List<BlockedApp>> = dao.getAllBlockedApps()
+    // Local database flow — now takes a userId; see BlockedAppsViewModel for
+    // how this stays reactive as the logged-in user changes.
+    fun blockedAppsForUser(userId: Int): Flow<List<BlockedApp>> = dao.getAllBlockedApps(userId)
 
+    suspend fun clearAllForUser(userId: Int) {
+        dao.clearAllForUser(userId)
+    }
     // ========== LOCAL DATABASE OPERATIONS ==========
 
     suspend fun addBlockedApp(app: BlockedApp) {
@@ -106,29 +111,50 @@ class BlockedAppsRepository @Inject constructor(
     suspend fun syncFromBackend(userId: Int) {
         withContext(Dispatchers.IO) {
             try {
-                android.util.Log.d("BlocksSync", "🔄 Syncing blocks for user $userId")
+                android.util.Log.d(
+                    "BlocksSync",
+                    "🔄 Syncing blocks for user $userId"
+                )
+
                 val response = getActiveBlocksFromBackend(userId)
-                android.util.Log.d("BlocksSync", "📡 Response: ${response.code()}")
+
+                android.util.Log.d(
+                    "BlocksSync",
+                    "📡 Response: ${response.code()}"
+                )
+
                 if (response.isSuccessful) {
                     response.body()?.let { backendBlocks ->
-                        android.util.Log.d("BlocksSync", "✅ Got ${backendBlocks.size} blocks from backend")
-                        // Convert backend blocks to local entities and save
-                        backendBlocks.forEach { backendBlock ->
-                            val localBlock = BlockedApp(
+                        android.util.Log.d(
+                            "BlocksSync",
+                            "✅ Got ${backendBlocks.size} blocks from backend"
+                        )
+
+                        val localBlocks = backendBlocks.map { backendBlock ->
+                            BlockedApp(
+                                userId = userId,
                                 packageName = backendBlock.packageName,
-                                appName = backendBlock.appName ?: backendBlock.packageName,
-                                durationMinutes = 25, // You can calculate from start/end time
+                                appName = backendBlock.appName
+                                    ?: backendBlock.packageName,
+                                durationMinutes = 25,
                                 id = backendBlock.id
                             )
-                            dao.insertBlockedApp(localBlock)
                         }
+
+                        dao.replaceAllForUser(userId, localBlocks)
                     }
                 } else {
-                    android.util.Log.e("BlocksSync", "❌ Failed: ${response.code()}")
+                    android.util.Log.e(
+                        "BlocksSync",
+                        "❌ Failed: ${response.code()}"
+                    )
                 }
             } catch (e: Exception) {
-                android.util.Log.e("BlocksSync", "❌ Error syncing blocks", e)
-                e.printStackTrace()
+                android.util.Log.e(
+                    "BlocksSync",
+                    "❌ Error syncing blocks",
+                    e
+                )
             }
         }
     }
@@ -139,5 +165,9 @@ class BlockedAppsRepository @Inject constructor(
     suspend fun refreshFromBackend() {
         // This can now call syncFromBackend with a userId
         // You'll need to store userId somewhere (SharedPreferences, etc.)
+    }
+
+    suspend fun replaceAllForUser(userId: Int, apps: List<BlockedApp>) {
+        dao.replaceAllForUser(userId, apps)
     }
 }

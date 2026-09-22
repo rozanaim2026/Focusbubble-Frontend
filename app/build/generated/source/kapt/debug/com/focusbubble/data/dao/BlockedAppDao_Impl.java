@@ -6,6 +6,7 @@ import androidx.room.CoroutinesRoom;
 import androidx.room.EntityDeletionOrUpdateAdapter;
 import androidx.room.EntityInsertionAdapter;
 import androidx.room.RoomDatabase;
+import androidx.room.RoomDatabaseKt;
 import androidx.room.RoomSQLiteQuery;
 import androidx.room.SharedSQLiteStatement;
 import androidx.room.util.CursorUtil;
@@ -36,7 +37,7 @@ public final class BlockedAppDao_Impl implements BlockedAppDao {
 
   private final EntityDeletionOrUpdateAdapter<BlockedApp> __deletionAdapterOfBlockedApp;
 
-  private final SharedSQLiteStatement __preparedStmtOfClearAll;
+  private final SharedSQLiteStatement __preparedStmtOfClearAllForUser;
 
   public BlockedAppDao_Impl(@NonNull final RoomDatabase __db) {
     this.__db = __db;
@@ -44,26 +45,27 @@ public final class BlockedAppDao_Impl implements BlockedAppDao {
       @Override
       @NonNull
       protected String createQuery() {
-        return "INSERT OR REPLACE INTO `blocked_apps` (`id`,`packageName`,`appName`,`durationMinutes`,`is_active`) VALUES (nullif(?, 0),?,?,?,?)";
+        return "INSERT OR REPLACE INTO `blocked_apps` (`id`,`userId`,`packageName`,`appName`,`durationMinutes`,`is_active`) VALUES (nullif(?, 0),?,?,?,?,?)";
       }
 
       @Override
       protected void bind(@NonNull final SupportSQLiteStatement statement,
           @NonNull final BlockedApp entity) {
         statement.bindLong(1, entity.getId());
+        statement.bindLong(2, entity.getUserId());
         if (entity.getPackageName() == null) {
-          statement.bindNull(2);
-        } else {
-          statement.bindString(2, entity.getPackageName());
-        }
-        if (entity.getAppName() == null) {
           statement.bindNull(3);
         } else {
-          statement.bindString(3, entity.getAppName());
+          statement.bindString(3, entity.getPackageName());
         }
-        statement.bindLong(4, entity.getDurationMinutes());
+        if (entity.getAppName() == null) {
+          statement.bindNull(4);
+        } else {
+          statement.bindString(4, entity.getAppName());
+        }
+        statement.bindLong(5, entity.getDurationMinutes());
         final int _tmp = entity.is_active() ? 1 : 0;
-        statement.bindLong(5, _tmp);
+        statement.bindLong(6, _tmp);
       }
     };
     this.__deletionAdapterOfBlockedApp = new EntityDeletionOrUpdateAdapter<BlockedApp>(__db) {
@@ -79,11 +81,11 @@ public final class BlockedAppDao_Impl implements BlockedAppDao {
         statement.bindLong(1, entity.getId());
       }
     };
-    this.__preparedStmtOfClearAll = new SharedSQLiteStatement(__db) {
+    this.__preparedStmtOfClearAllForUser = new SharedSQLiteStatement(__db) {
       @Override
       @NonNull
       public String createQuery() {
-        final String _query = "DELETE FROM blocked_apps";
+        final String _query = "DELETE FROM blocked_apps WHERE userId = ?";
         return _query;
       }
     };
@@ -99,6 +101,25 @@ public final class BlockedAppDao_Impl implements BlockedAppDao {
         __db.beginTransaction();
         try {
           __insertionAdapterOfBlockedApp.insert(app);
+          __db.setTransactionSuccessful();
+          return Unit.INSTANCE;
+        } finally {
+          __db.endTransaction();
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
+  public Object insertBlockedApps(final List<BlockedApp> apps,
+      final Continuation<? super Unit> $completion) {
+    return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
+      @Override
+      @NonNull
+      public Unit call() throws Exception {
+        __db.beginTransaction();
+        try {
+          __insertionAdapterOfBlockedApp.insert(apps);
           __db.setTransactionSuccessful();
           return Unit.INSTANCE;
         } finally {
@@ -128,12 +149,20 @@ public final class BlockedAppDao_Impl implements BlockedAppDao {
   }
 
   @Override
-  public Object clearAll(final Continuation<? super Unit> $completion) {
+  public Object replaceAllForUser(final int userId, final List<BlockedApp> apps,
+      final Continuation<? super Unit> $completion) {
+    return RoomDatabaseKt.withTransaction(__db, (__cont) -> BlockedAppDao.DefaultImpls.replaceAllForUser(BlockedAppDao_Impl.this, userId, apps, __cont), $completion);
+  }
+
+  @Override
+  public Object clearAllForUser(final int userId, final Continuation<? super Unit> $completion) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
       @NonNull
       public Unit call() throws Exception {
-        final SupportSQLiteStatement _stmt = __preparedStmtOfClearAll.acquire();
+        final SupportSQLiteStatement _stmt = __preparedStmtOfClearAllForUser.acquire();
+        int _argIndex = 1;
+        _stmt.bindLong(_argIndex, userId);
         try {
           __db.beginTransaction();
           try {
@@ -144,16 +173,18 @@ public final class BlockedAppDao_Impl implements BlockedAppDao {
             __db.endTransaction();
           }
         } finally {
-          __preparedStmtOfClearAll.release(_stmt);
+          __preparedStmtOfClearAllForUser.release(_stmt);
         }
       }
     }, $completion);
   }
 
   @Override
-  public Flow<List<BlockedApp>> getAllBlockedApps() {
-    final String _sql = "SELECT * FROM blocked_apps";
-    final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 0);
+  public Flow<List<BlockedApp>> getAllBlockedApps(final int userId) {
+    final String _sql = "SELECT * FROM blocked_apps WHERE userId = ?";
+    final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 1);
+    int _argIndex = 1;
+    _statement.bindLong(_argIndex, userId);
     return CoroutinesRoom.createFlow(__db, false, new String[] {"blocked_apps"}, new Callable<List<BlockedApp>>() {
       @Override
       @NonNull
@@ -161,6 +192,7 @@ public final class BlockedAppDao_Impl implements BlockedAppDao {
         final Cursor _cursor = DBUtil.query(__db, _statement, false, null);
         try {
           final int _cursorIndexOfId = CursorUtil.getColumnIndexOrThrow(_cursor, "id");
+          final int _cursorIndexOfUserId = CursorUtil.getColumnIndexOrThrow(_cursor, "userId");
           final int _cursorIndexOfPackageName = CursorUtil.getColumnIndexOrThrow(_cursor, "packageName");
           final int _cursorIndexOfAppName = CursorUtil.getColumnIndexOrThrow(_cursor, "appName");
           final int _cursorIndexOfDurationMinutes = CursorUtil.getColumnIndexOrThrow(_cursor, "durationMinutes");
@@ -170,6 +202,8 @@ public final class BlockedAppDao_Impl implements BlockedAppDao {
             final BlockedApp _item;
             final int _tmpId;
             _tmpId = _cursor.getInt(_cursorIndexOfId);
+            final int _tmpUserId;
+            _tmpUserId = _cursor.getInt(_cursorIndexOfUserId);
             final String _tmpPackageName;
             if (_cursor.isNull(_cursorIndexOfPackageName)) {
               _tmpPackageName = null;
@@ -188,7 +222,7 @@ public final class BlockedAppDao_Impl implements BlockedAppDao {
             final int _tmp;
             _tmp = _cursor.getInt(_cursorIndexOfIsActive);
             _tmpIs_active = _tmp != 0;
-            _item = new BlockedApp(_tmpId,_tmpPackageName,_tmpAppName,_tmpDurationMinutes,_tmpIs_active);
+            _item = new BlockedApp(_tmpId,_tmpUserId,_tmpPackageName,_tmpAppName,_tmpDurationMinutes,_tmpIs_active);
             _result.add(_item);
           }
           return _result;

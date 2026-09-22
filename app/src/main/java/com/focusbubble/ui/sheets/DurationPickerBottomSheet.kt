@@ -1,4 +1,5 @@
 package com.focusbubble.ui.sheets
+
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
@@ -16,6 +17,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.math.abs
+
+private val AccentBlue = Color(0xFF3D8DFF)
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -27,7 +31,7 @@ fun DurationPickerBottomSheet(
 ) {
     val hourRange = (0..11).toList()
     val minuteRange = (0..59).toList()
-    val visibleCount = 5 // Odd number for center alignment
+    val visibleCount = 5
 
     val hoursState = rememberLazyListState(initialHours)
     val minutesState = rememberLazyListState(initialMinutes)
@@ -35,17 +39,12 @@ fun DurationPickerBottomSheet(
     var selectedHour by remember { mutableStateOf(initialHours) }
     var selectedMinute by remember { mutableStateOf(initialMinutes) }
 
-    LaunchedEffect(hoursState.firstVisibleItemIndex) {
-        selectedHour = hoursState.firstVisibleItemIndex
-    }
-
-    LaunchedEffect(minutesState.firstVisibleItemIndex) {
-        selectedMinute = minutesState.firstVisibleItemIndex
-    }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        containerColor = Color(0xFF1C1C1C),
+        sheetState = sheetState,
+        containerColor = Color.Black,
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
     ) {
         Column(
@@ -55,9 +54,9 @@ fun DurationPickerBottomSheet(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                "Set duration for your focus session.",
+                "How long do you want to focus?",
                 color = Color.White,
-                fontSize = 18.sp,
+                fontSize = 16.sp,
                 fontWeight = FontWeight.Medium
             )
 
@@ -67,9 +66,9 @@ fun DurationPickerBottomSheet(
                 PickerLazyColumn(
                     items = hourRange,
                     state = hoursState,
-                    selectedIndex = selectedHour,
                     visibleCount = visibleCount,
-                    label = { "$it" }
+                    label = { "$it" },
+                    onSelectedChanged = { selectedHour = it }
                 )
 
                 Spacer(Modifier.width(8.dp))
@@ -77,7 +76,7 @@ fun DurationPickerBottomSheet(
                 Text(
                     "hours",
                     color = Color.White,
-                    fontSize = 16.sp,
+                    fontSize = 13.sp,
                     modifier = Modifier.align(Alignment.CenterVertically)
                 )
 
@@ -86,9 +85,9 @@ fun DurationPickerBottomSheet(
                 PickerLazyColumn(
                     items = minuteRange,
                     state = minutesState,
-                    selectedIndex = selectedMinute,
                     visibleCount = visibleCount,
-                    label = { "$it" }
+                    label = { "$it" },
+                    onSelectedChanged = { selectedMinute = it }
                 )
 
                 Spacer(Modifier.width(8.dp))
@@ -96,7 +95,7 @@ fun DurationPickerBottomSheet(
                 Text(
                     "mins",
                     color = Color.White,
-                    fontSize = 16.sp,
+                    fontSize = 13.sp,
                     modifier = Modifier.align(Alignment.CenterVertically)
                 )
             }
@@ -110,10 +109,10 @@ fun DurationPickerBottomSheet(
                     containerColor = Color.White,
                     contentColor = Color.Black
                 ),
-                shape = RoundedCornerShape(32.dp),
-                contentPadding = PaddingValues(vertical = 16.dp)
+                shape = RoundedCornerShape(24.dp),
+                contentPadding = PaddingValues(vertical = 0.dp)
             ) {
-                Text("Confirm", fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                Text("Confirm", fontWeight = FontWeight.Bold, fontSize = 14.sp)
             }
         }
     }
@@ -124,38 +123,57 @@ fun DurationPickerBottomSheet(
 fun PickerLazyColumn(
     items: List<Int>,
     state: LazyListState,
-    selectedIndex: Int,
     visibleCount: Int,
-    label: (Int) -> String
+    label: (Int) -> String,
+    onSelectedChanged: (Int) -> Unit
 ) {
-    val padding = (visibleCount / 2) * 50
+    val itemHeightDp = 50
+    val padding = (visibleCount / 2) * itemHeightDp
+
+    // Precisely find whichever item's center is closest to the viewport's center —
+    // recomputed continuously during scroll, not just on settle. Using plain
+    // firstVisibleItemIndex made the highlighted value change a beat before the
+    // item was actually centered, which read as slightly jumpy/imprecise.
+    val centeredIndex by remember {
+        derivedStateOf {
+            val layoutInfo = state.layoutInfo
+            val viewportCenter = (layoutInfo.viewportStartOffset + layoutInfo.viewportEndOffset) / 2
+            layoutInfo.visibleItemsInfo.minByOrNull { item ->
+                abs((item.offset + item.size / 2) - viewportCenter)
+            }?.index ?: 0
+        }
+    }
+
+    LaunchedEffect(centeredIndex) {
+        onSelectedChanged(centeredIndex.coerceIn(items.indices))
+    }
 
     LazyColumn(
         state = state,
         modifier = Modifier
-            .height((visibleCount * 50).dp)
+            .height((visibleCount * itemHeightDp).dp)
             .width(80.dp)
             .background(Color.Transparent),
         contentPadding = PaddingValues(vertical = padding.dp),
         flingBehavior = rememberSnapFlingBehavior(state)
     ) {
         itemsIndexed(items) { idx, item ->
-            val isSelected = idx == selectedIndex
+            val isSelected = idx == centeredIndex
 
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(50.dp)
+                    .height(itemHeightDp.dp)
                     .background(
-                        if (isSelected) Color(0xFF4CAF50) else Color.Transparent,
+                        if (isSelected) AccentBlue else Color.Transparent,
                         RoundedCornerShape(12.dp)
                     ),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     label(item),
-                    color = if (isSelected) Color.Black else Color.White,
-                    fontSize = if (isSelected) 24.sp else 18.sp,
+                    color = if (isSelected) Color.White else Color.White.copy(alpha = 0.45f),
+                    fontSize = if (isSelected) 20.sp else 15.sp,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                 )
             }

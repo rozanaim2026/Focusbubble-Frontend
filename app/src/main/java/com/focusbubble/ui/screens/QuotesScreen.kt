@@ -8,15 +8,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.focusbubble.ui.sheets.QuotesSheet
+import com.focusbubble.ui.utils.QuotePreferences
+import com.focusbubble.ui.sheets.QuotesMultiSelectSheet
 
 @Composable
 fun QuotesScreen(
     onBackClick: () -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     var showQuotesSheet by remember { mutableStateOf(false) }
-    var selectedQuotes by remember { mutableStateOf(emptyList<String>()) }
-
+    var selectedQuotes by remember { mutableStateOf(QuotePreferences.getSelectedCategories(context)) }
     ScreenWithBack(
         title = "Quotes",
         onBackClick = onBackClick
@@ -93,11 +94,12 @@ fun QuotesScreen(
     }
 
     if (showQuotesSheet) {
-        QuotesSheet(
-            initialSelected = selectedQuotes,
+        QuotesMultiSelectSheet(
+            selectedQuotes = selectedQuotes,
             onDismiss = { showQuotesSheet = false },
             onConfirm = { quotes ->
                 selectedQuotes = quotes
+                QuotePreferences.setSelectedCategories(context, quotes)
                 showQuotesSheet = false
             }
         )

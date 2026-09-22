@@ -38,7 +38,7 @@ fun EditOptionsSheet(
     // --- States ---
     var activeSubsheet by remember { mutableStateOf<Subsheet?>(null) }
     val currentDuration by viewModel.selectedDurationMinutes.collectAsState()
-    var selectedQuotes by remember { mutableStateOf<Set<String>>(emptySet()) }
+    var selectedQuotes by remember { mutableStateOf(com.focusbubble.ui.utils.QuotePreferences.getSelectedCategories(context)) }
 
     val durationDisplay = remember(currentDuration) {
         if (currentDuration >= 60) {
@@ -53,21 +53,18 @@ fun EditOptionsSheet(
     // --- Blocked apps icons from blockedAppsUi (already has icons loaded) ---
     val blockedApps by viewModel.blockedApps.collectAsState()
     val blockedAppsUi by viewModel.blockedAppsUi.collectAsState()
-    
-    // Use icons from blockedAppsUi which already has iconBitmap loaded
-    val blockedIcons = remember(blockedAppsUi) {
-        blockedAppsUi.mapNotNull { app ->
-            app.iconBitmap?.let { bitmap ->
-                BitmapPainter(bitmap)
-            }
-        }
+
+    val blockedBitmaps = remember(blockedAppsUi) {
+        blockedAppsUi.mapNotNull { it.iconBitmap }
     }
 
     // --- MAIN SHEET ---
     if (activeSubsheet == null) {
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         ModalBottomSheet(
             onDismissRequest = onDismiss,
-            containerColor = Color(0xFF1C1C1C),
+            sheetState = sheetState,
+            containerColor = Color.Black,
             shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
         ) {
             Column(
@@ -75,8 +72,8 @@ fun EditOptionsSheet(
                     .fillMaxWidth()
                     .padding(16.dp)
             ) {
-                Text("Edit Session Options", fontSize = 20.sp, color = Color.White)
-                Spacer(Modifier.height(12.dp))
+                Text("Customize Your Session", fontSize = 18.sp, color = Color.White)
+                Spacer(Modifier.height(12.dp,))
 
                 // Duration
                 EditRow(
@@ -91,16 +88,21 @@ fun EditOptionsSheet(
                 EditRowWithIcons(
                     label = if (blockedApps.isEmpty()) "Block Apps" else "Blocked Apps",
                     count = blockedApps.size,
-                    icons = blockedIcons.take(3), // Show max 3 icons
+                    icons = blockedBitmaps.take(3),
                     icon = Icons.Filled.Block
                 ) { activeSubsheet = Subsheet.BlockApps }
 
                 Spacer(Modifier.height(12.dp))
 
                 // Quotes
+                val quotesSubtitle = when (selectedQuotes.size) {
+                    0 -> "None selected"
+                    1 -> "1 quote selected"
+                    else -> "${selectedQuotes.size} quotes selected"
+                }
                 EditRow(
                     label = "Quotes",
-                    subtitle = if (selectedQuotes.isEmpty()) "Select Quotes" else selectedQuotes.joinToString(),
+                    subtitle = quotesSubtitle,
                     icon = Icons.Filled.FormatListBulleted
                 ) { activeSubsheet = Subsheet.Quotes }
 
@@ -112,9 +114,10 @@ fun EditOptionsSheet(
                         containerColor = Color.White,
                         contentColor = Color.Black
                     ),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    shape = RoundedCornerShape(24.dp)
                 ) {
-                    Text("Close")
+                    Text("Close", fontSize = 14.sp)
                 }
             }
         }
@@ -140,6 +143,7 @@ fun EditOptionsSheet(
             onDismiss = { activeSubsheet = null },
             onConfirm = { selected ->
                 selectedQuotes = selected
+                com.focusbubble.ui.utils.QuotePreferences.setSelectedCategories(context, selected)
                 activeSubsheet = null
             }
         )
@@ -160,13 +164,13 @@ fun EditRow(
             .fillMaxWidth()
             .background(Color(0xFF2C2C2C), RoundedCornerShape(12.dp))
             .clickable { onClick() }
-            .padding(16.dp),
+            .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(icon, contentDescription = null, tint = Color.White)
         Spacer(Modifier.width(12.dp))
-        Text(label, color = Color.White, fontSize = 16.sp, modifier = Modifier.weight(1f))
-        Text(subtitle, color = Color.LightGray, fontSize = 14.sp)
+        Text(label, color = Color.White, fontSize = 14.sp, modifier = Modifier.weight(1f))
+        Text(subtitle, color = Color.LightGray, fontSize = 12.sp)
         Spacer(Modifier.width(8.dp))
         Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = Color.White)
     }
@@ -176,7 +180,7 @@ fun EditRow(
 fun EditRowWithIcons(
     label: String,
     count: Int = 0,
-    icons: List<BitmapPainter>,
+    icons: List<androidx.compose.ui.graphics.ImageBitmap>,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     onClick: () -> Unit
 ) {
@@ -185,38 +189,29 @@ fun EditRowWithIcons(
             .fillMaxWidth()
             .background(Color(0xFF2C2C2C), RoundedCornerShape(12.dp))
             .clickable { onClick() }
-            .padding(16.dp),
+            .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(icon, contentDescription = null, tint = Color.White)
         Spacer(Modifier.width(12.dp))
-        Text(label, color = Color.White, fontSize = 16.sp, modifier = Modifier.weight(1f))
-        
-        // Show icons if available
+        Text(label, color = Color.White, fontSize = 14.sp, modifier = Modifier.weight(1f))
+
+        // Same overlapping stack style used on the Dashboard
         if (icons.isNotEmpty()) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                icons.forEach { painter ->
-                    Image(
-                        painter = painter,
-                        contentDescription = null,
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
-                // Show count if there are selected apps
-                if (count > 0) {
-                    Text(
-                        text = "($count)",
-                        color = Color.LightGray,
-                        fontSize = 14.sp,
-                        modifier = Modifier.padding(start = 4.dp)
-                    )
-                }
+            com.focusbubble.ui.components.StackedAppIcons(
+                icons = icons,
+                iconSize = 26.dp
+            )
+            if (count > 0) {
+                Text(
+                    text = "($count)",
+                    color = Color.LightGray,
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(start = 6.dp)
+                )
             }
         }
-        
+
         Spacer(Modifier.width(8.dp))
         Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = Color.White)
     }

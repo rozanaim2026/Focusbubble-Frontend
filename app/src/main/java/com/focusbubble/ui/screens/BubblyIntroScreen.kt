@@ -114,7 +114,7 @@ fun BubblyIntroScreen(onContinue: () -> Unit, modifier: Modifier = Modifier) {
             )
 
             Text(
-                text = "Your productivity manager —",
+                text = "Your productivity manager",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Medium,
                 color = Color.White.copy(alpha = 0.9f),
@@ -142,14 +142,14 @@ fun BubblyIntroScreen(onContinue: () -> Unit, modifier: Modifier = Modifier) {
                 onClick = onContinue,
                 modifier = Modifier
                     .fillMaxWidth(0.7f)
-                    .height(56.dp),
+                    .height(48.dp),
                 shape = RoundedCornerShape(28.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White)
             ) {
                 Text(
                     text = "Continue",
-                    fontSize = 18.sp,
-                    color = MaterialTheme.colorScheme.primary
+                    fontSize = 16.sp,
+                    color = Color.Black
                 )
             }
         }

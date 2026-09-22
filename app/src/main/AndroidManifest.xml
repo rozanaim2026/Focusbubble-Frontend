@@ -17,6 +17,8 @@
 
 
     <application
+        android:enableOnBackInvokedCallback="true"
+        tools:targetApi="33"
         android:name=".FocusBubbleApplication"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -38,6 +40,7 @@
             </intent-filter>
         </activity>
 
+        <!-- Blocker service -->
         <!-- Blocker service -->
         <service
             android:name=".service.BlockerService"
@@ -61,17 +64,31 @@
             android:enabled="true"
             android:exported="false" />
 
-        <!-- Overlay activity -->
-        <activity
-            android:name=".ui.BlockOverlayActivity"
-            android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
-            android:excludeFromRecents="true"
-            android:taskAffinity=""
-            android:finishOnTaskLaunch="true"
-            android:exported="false"
-            android:launchMode="singleInstance"
-            android:showWhenLocked="true"
-            android:turnScreenOn="true"/>
+        <!-- Accessibility service used to move blocked apps away from the foreground -->
+        <service
+            android:name=".FocusBubbleAccessibilityService"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:exported="false">
+
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+
+        </service>
+
+        <service
+            android:name=".FocusBubbleNotificationListener"
+            android:label="FocusBubble Media Control"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
 
         <!-- FileProvider for sharing cached app icons -->
         <provider

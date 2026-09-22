@@ -1,8 +1,10 @@
 package com.focusbubble;
 
 import android.Manifest;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -20,12 +22,22 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 
-@kotlin.Metadata(mv = {1, 9, 0}, k = 2, xi = 48, d1 = {"\u0000\u0018\n\u0000\n\u0002\u0010\u0002\n\u0000\n\u0002\u0018\u0002\n\u0000\n\u0002\u0018\u0002\n\u0002\u0010\b\n\u0000\u001a$\u0010\u0000\u001a\u00020\u00012\u0006\u0010\u0002\u001a\u00020\u00032\u0012\u0010\u0004\u001a\u000e\u0012\u0004\u0012\u00020\u0006\u0012\u0004\u0012\u00020\u00010\u0005H\u0007\u00a8\u0006\u0007"}, d2 = {"AppNavHost", "", "sharedPrefs", "Landroid/content/SharedPreferences;", "onStartFocusClick", "Lkotlin/Function1;", "", "app_debug"})
+@kotlin.Metadata(mv = {1, 9, 0}, k = 2, xi = 48, d1 = {"\u0000$\n\u0000\n\u0002\u0010\u0002\n\u0000\n\u0002\u0018\u0002\n\u0000\n\u0002\u0018\u0002\n\u0002\u0010\b\n\u0000\n\u0002\u0010\u000e\n\u0000\n\u0002\u0018\u0002\n\u0000\u001a$\u0010\u0000\u001a\u00020\u00012\u0006\u0010\u0002\u001a\u00020\u00032\u0012\u0010\u0004\u001a\u000e\u0012\u0004\u0012\u00020\u0006\u0012\u0004\u0012\u00020\u00010\u0005H\u0007\u001a\u0010\u0010\u0007\u001a\u00020\b2\u0006\u0010\t\u001a\u00020\nH\u0002\u00a8\u0006\u000b"}, d2 = {"AppNavHost", "", "sharedPrefs", "Landroid/content/SharedPreferences;", "onStartFocusClick", "Lkotlin/Function1;", "", "determineStartDestination", "", "context", "Landroid/content/Context;", "app_debug"})
 public final class MainActivityKt {
     
     @androidx.compose.runtime.Composable()
     public static final void AppNavHost(@org.jetbrains.annotations.NotNull()
     android.content.SharedPreferences sharedPrefs, @org.jetbrains.annotations.NotNull()
     kotlin.jvm.functions.Function1<? super java.lang.Integer, kotlin.Unit> onStartFocusClick) {
+    }
+    
+    /**
+     * Decides which screen to land on when the app (re)opens — including after the
+     * whole process was killed and relaunched, e.g. from tapping the floating timer
+     * while the app was backgrounded. Previously this always started at "welcome",
+     * which silently logged the user out and abandoned any in-progress session.
+     */
+    private static final java.lang.String determineStartDestination(android.content.Context context) {
+        return null;
     }
 }

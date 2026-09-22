@@ -25,6 +25,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.focusbubble.R
+import com.focusbubble.data.AppDatabase
+import com.focusbubble.data.entities.UserEntity
 import com.focusbubble.data.model.TokenIn
 import com.focusbubble.data.model.UserCreate
 import com.focusbubble.data.network.RetrofitClient
@@ -36,6 +38,7 @@ import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -76,7 +79,6 @@ fun WelcomeScreen(
 
                 val sharedPrefs = context.getSharedPreferences("user_prefs", Activity.MODE_PRIVATE)
                 sharedPrefs.edit().putString("profile_name", finalName).apply()
-
                 // Send token to backend BEFORE navigating
                 if (idToken != null) {
                     Log.d("GoogleSignIn", "📤 Sending token to backend...")
@@ -101,17 +103,23 @@ fun WelcomeScreen(
             } catch (e: ApiException) {
                 Log.e("GoogleSignIn", "❌ ApiException - Status Code: ${e.statusCode}, Message: ${e.message}", e)
                 Toast.makeText(context, "Sign-in failed: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
-                onContinue("User")
+                isLoading.value = false
+                showBottomSheet.value = true
             } catch (e: Exception) {
                 Log.e("GoogleSignIn", "❌ Unexpected exception during sign-in", e)
                 Toast.makeText(context, "Unexpected error: ${e.message}", Toast.LENGTH_LONG).show()
-                onContinue("User")
+                isLoading.value = false
+                showBottomSheet.value = true
             }
 
         } else {
             Log.w("GoogleSignIn", "⚠️ User cancelled sign-in or error occurred - Result Code: ${result.resultCode}")
-            Toast.makeText(context, "User cancelled sign-in", Toast.LENGTH_SHORT).show()
-            onContinue("User")
+            Toast.makeText(context, "Sign-in cancelled", Toast.LENGTH_SHORT).show()
+            isLoading.value = false
+            showBottomSheet.value = true
+            // Do NOT call onContinue here — cancelling must not create or
+            // log in any user. Staying on the "Choose how to continue" sheet
+            // lets the person just try again.
         }
     }
 
@@ -144,39 +152,39 @@ fun WelcomeScreen(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = "Welcome to\nFocus Bubble App",
-                    fontSize = 28.sp,
+                    fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
                     textAlign = TextAlign.Center,
-                    lineHeight = 34.sp
+                    lineHeight = 30.sp
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
                     text = "Transform your study sessions with focused productivity",
-                    fontSize = 16.sp,
+                    fontSize = 13.sp,
                     color = Color.White.copy(alpha = 0.85f),
                     textAlign = TextAlign.Center,
-                    lineHeight = 22.sp
+                    lineHeight = 20.sp
                 )
             }
-
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Button(
                     onClick = { showBottomSheet.value = true },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(28.dp),
+                        .height(48.dp),
+                    shape = RoundedCornerShape(24.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color.White)
                 ) {
                     Text(
                         text = "Get Started",
-                        fontSize = 16.sp,
+                        fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = Color.Black
                     )
+
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -196,8 +204,8 @@ fun WelcomeScreen(
         ModalBottomSheet(
             onDismissRequest = { showBottomSheet.value = false },
             sheetState = bottomSheetState,
-            containerColor = MaterialTheme.colorScheme.surface,
-            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+            containerColor = Color.Black,
+            shape = RoundedCornerShape(topStart = 23.dp, topEnd = 23.dp)
         ) {
             Column(
                 modifier = Modifier
@@ -210,15 +218,16 @@ fun WelcomeScreen(
                         .width(40.dp)
                         .height(4.dp)
                         .clip(RoundedCornerShape(2.dp))
-                        .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
+                        .background(Color.White.copy(alpha = 0.3f))
                 )
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
                 Text(
                     text = "Welcome\nChoose how to continue",
-                    fontSize = 20.sp,
+                    fontSize = 17.sp,
                     fontWeight = FontWeight.SemiBold,
+                    color = Color.White,
                     textAlign = TextAlign.Center
                 )
 
@@ -251,24 +260,27 @@ fun WelcomeScreen(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp),
+                        .height(48.dp),
                     enabled = !isLoading.value,
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4285F4)),
-                    shape = RoundedCornerShape(28.dp)
+                    shape = RoundedCornerShape(24.dp)
                 ) {
                     if (isLoading.value) {
                         CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
+                            modifier = Modifier.size(18.dp),
                             color = Color.White
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Loading...")
+                        Text(
+                            text = "Loading...",
+                            fontSize = 14.sp
+                        )
                     } else {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Spacer(modifier = Modifier.width(12.dp))
                             Text(
                                 text = "Continue with Google",
-                                fontSize = 16.sp,
+                                fontSize = 14.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = Color.White
                             )
@@ -279,45 +291,60 @@ fun WelcomeScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // Skip Button - CREATE USER ON BACKEND
-                OutlinedButton(
+                Button(
                     onClick = {
                         scope.launch {
                             try {
-                                // Create anonymous user on backend
+                                val guestEmail = UserSession.getOrCreateGuestEmail(context)
                                 val response = RetrofitClient.api.createUser(
                                     UserCreate(
-                                        email = "user_${System.currentTimeMillis()}@focusbubble.app",
-                                        name = "User"
+                                        email = guestEmail,
+                                        name = "Guest"
                                     )
                                 )
 
                                 if (response.isSuccessful) {
                                     response.body()?.let { user ->
                                         UserSession.saveUser(context, user.id, user.email)
-                                        Log.d("BackendAuth", "✅ User created: ID=${user.id}")
+                                        AppDatabase.getInstance(context).userDao().upsertUser(
+                                            UserEntity(
+                                                id = user.id,
+                                                email = user.email,
+                                                name = user.name ?: "Guest",
+                                                pictureUrl = user.picture
+                                            )
+                                        )
+                                        Log.d("BackendAuth", "✅ Guest user ready: ID=${user.id}")
                                     }
+                                } else {
+                                    Log.e("BackendAuth", "Failed to create guest user: ${response.code()}")
                                 }
                             } catch (e: Exception) {
-                                Log.e("BackendAuth", "Error creating user", e)
+                                Log.e("BackendAuth", "Error creating guest user", e)
                             }
+
+                            val sharedPrefs = context.getSharedPreferences("user_prefs", Activity.MODE_PRIVATE)
+                            sharedPrefs.edit().putString("profile_name", "Guest").apply()
+
+                            showBottomSheet.value = false
+                            onContinue("Guest")
                         }
-
-                        val sharedPrefs = context.getSharedPreferences("user_prefs", Activity.MODE_PRIVATE)
-                        sharedPrefs.edit().putString("profile_name", "User").apply()
-
-                        showBottomSheet.value = false
-                        onContinue("User")
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp),
+                        .height(48.dp),
                     enabled = !isLoading.value,
-                    shape = RoundedCornerShape(28.dp)
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF4285F4),
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(24.dp)
                 ) {
                     Text(
                         text = "Skip and Continue",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.White
                     )
                 }
 
@@ -326,7 +353,6 @@ fun WelcomeScreen(
         }
     }
 }
-
 // Updated: Sends ID token to backend using RetrofitClient
 suspend fun sendIdTokenToBackend(context: Context, idToken: String) {
     withContext(Dispatchers.IO) {
@@ -343,6 +369,19 @@ suspend fun sendIdTokenToBackend(context: Context, idToken: String) {
             if (response.isSuccessful) {
                 response.body()?.let { user ->
                     UserSession.saveUser(context, user.id, user.email)
+                    // Local mirror of the signed-in user — this is the row that
+                    // was missing entirely, which is why the Database Inspector
+                    // showed no user data even after signing in. UserSession
+                    // only ever cached id/email in SharedPreferences; nothing
+                    // was writing a queryable row into Room.
+                    AppDatabase.getInstance(context).userDao().upsertUser(
+                        UserEntity(
+                            id = user.id,
+                            email = user.email,
+                            name = user.name ?: "User",
+                            pictureUrl = user.picture
+                        )
+                    )
                     Log.d("BackendAuth", "✅ Google user authenticated successfully!")
                     Log.d("BackendAuth", "👤 User ID: ${user.id}")
                     Log.d("BackendAuth", "📧 Email: ${user.email}")

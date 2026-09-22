@@ -398,15 +398,15 @@ public final class DaggerFocusBubbleApplication_HiltComponents_SingletonC {
 
     @IdentifierNameString
     private static final class LazyClassKeyProvider {
-      static String com_focusbubble_ui_viewmodel_ScheduleViewModel = "com.focusbubble.ui.viewmodel.ScheduleViewModel";
-
       static String com_focusbubble_ui_viewmodel_BlockedAppsViewModel = "com.focusbubble.ui.viewmodel.BlockedAppsViewModel";
 
-      @KeepFieldType
-      ScheduleViewModel com_focusbubble_ui_viewmodel_ScheduleViewModel2;
+      static String com_focusbubble_ui_viewmodel_ScheduleViewModel = "com.focusbubble.ui.viewmodel.ScheduleViewModel";
 
       @KeepFieldType
       BlockedAppsViewModel com_focusbubble_ui_viewmodel_BlockedAppsViewModel2;
+
+      @KeepFieldType
+      ScheduleViewModel com_focusbubble_ui_viewmodel_ScheduleViewModel2;
     }
   }
 

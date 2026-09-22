@@ -26,6 +26,7 @@ import androidx.navigation.NavHostController
 import com.focusbubble.R
 import com.focusbubble.ui.components.TopBar
 import com.focusbubble.ui.components.BottomNavBar
+import com.focusbubble.ui.components.QuoteMascot
 import com.focusbubble.ui.sheets.EditOptionsSheet
 import com.focusbubble.ui.viewmodel.BlockedAppsViewModel
 import com.focusbubble.ui.viewmodel.FocusStatsViewModel
@@ -49,7 +50,7 @@ fun DashboardScreen(
     var selectedTab by remember { mutableStateOf("Dashboard") }
     var showEditOptionsSheet by remember { mutableStateOf(false) }
     var showPermissionsDialog by remember { mutableStateOf(false) }
-    
+
     // Notification permission launcher (Android 13+)
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -58,7 +59,17 @@ fun DashboardScreen(
     }
 
     val blockedAppsViewModel: BlockedAppsViewModel = hiltViewModel()
-    val focusStatsViewModel: FocusStatsViewModel = hiltViewModel()
+    // Scoped to the Activity — matching AppNavHost's focusStatsViewModel in
+    // MainActivity.kt exactly — so both refer to the SAME instance/StateFlow.
+    // Previously this called plain hiltViewModel() with no explicit owner,
+    // which resolves to a ViewModelStore scoped to THIS screen's own
+    // NavBackStackEntry — a completely separate instance from the one the
+    // app-wide session-finished broadcast receiver (in AppNavHost) calls
+    // .refresh() on. That mismatch is why the weekly timer never updated
+    // live: the receiver really was refreshing a FocusStatsViewModel, just
+    // not the one this screen's collectAsState() below is actually watching.
+    val focusStatsViewModel: FocusStatsViewModel =
+        hiltViewModel(context as androidx.activity.ComponentActivity)
 
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
@@ -71,12 +82,13 @@ fun DashboardScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = 80.dp),
+                .padding(bottom = 90.dp)
+                .navigationBarsPadding(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(28.dp))
             TopBar(userName = userName ?: "User", onMenuClick = onMenuClick)
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             Box(
                 modifier = Modifier
@@ -95,15 +107,12 @@ fun DashboardScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(horizontal = 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.bubbly_icon),
-                    contentDescription = "Mascot",
-                    modifier = Modifier
-                        .size(120.dp)
-                        .padding(bottom = 12.dp)
+                QuoteMascot(
+                    size = 96.dp,
+                    modifier = Modifier.padding(bottom = 10.dp)
                 )
 
                 // Start Focus Session Button - with step-by-step permission check
@@ -114,9 +123,10 @@ fun DashboardScreen(
                         val hasNotification = PermissionHelper.hasNotificationPermission(context)
                         val hasOverlay = PermissionHelper.hasOverlayPermission(context)
                         val hasUsageStats = PermissionHelper.hasUsageStatsPermission(context)
-                        
+                        val hasAccessibility = PermissionHelper.hasAccessibilityPermission(context)
+                        val hasNotificationListener = PermissionHelper.hasNotificationListenerPermission(context)
                         android.util.Log.d("DashboardScreen", "Permission check - Notification: $hasNotification, Overlay: $hasOverlay, Usage: $hasUsageStats")
-                        
+
                         when {
                             // If notification not granted (Android 13+), ask for it FIRST
                             !hasNotification -> {
@@ -135,27 +145,44 @@ fun DashboardScreen(
                                 android.util.Log.d("DashboardScreen", "Usage permission missing, showing dialog")
                                 showPermissionsDialog = true
                             }
+
+                            // If usage granted but accessibility not granted, ask for it
+                            !hasAccessibility -> {
+                                android.util.Log.d("DashboardScreen", "Accessibility permission missing, showing dialog")
+                                showPermissionsDialog = true
+                            }
+                            // If all granted, start session!
                             // If all granted, start session!
                             else -> {
-                                android.util.Log.d("DashboardScreen", "All permissions granted, starting session")
-                                val duration = blockedAppsViewModel.selectedDurationMinutes.value
-                                focusStatsViewModel.addFocusTime(duration)
-                                navController.navigate("focusSession/$duration")
+                                val blockedCount = blockedAppsViewModel.blockedApps.value.size
+                                if (blockedCount == 0) {
+                                    android.util.Log.d("DashboardScreen", "No apps selected — prompting user to pick before starting")
+                                    android.widget.Toast.makeText(
+                                        context,
+                                        "Select at least one app to block before starting a session",
+                                        android.widget.Toast.LENGTH_SHORT
+                                    ).show()
+                                    showEditOptionsSheet = true
+                                } else {
+                                    android.util.Log.d("DashboardScreen", "All permissions granted, starting session")
+                                    val duration = blockedAppsViewModel.selectedDurationMinutes.value
+                                    navController.navigate("focusSession/$duration")
+                                }
                             }
                         }
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp),
+                        .height(48.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color.White,
                         contentColor = Color.Black
                     ),
-                    shape = RoundedCornerShape(28.dp)
+                    shape = RoundedCornerShape(24.dp)
                 ) {
                     Text(
                         text = "Start Focus Session",
-                        fontSize = 16.sp
+                        fontSize = 14.sp
                     )
                 }
             }
@@ -172,10 +199,18 @@ fun DashboardScreen(
             PermissionsCheckDialog(
                 onAllPermissionsGranted = {
                     showPermissionsDialog = false
-                    // Start session now that permissions are granted
-                    val duration = blockedAppsViewModel.selectedDurationMinutes.value
-                    focusStatsViewModel.addFocusTime(duration)
-                    navController.navigate("focusSession/$duration")
+                    val blockedCount = blockedAppsViewModel.blockedApps.value.size
+                    if (blockedCount == 0) {
+                        android.widget.Toast.makeText(
+                            context,
+                            "Select at least one app to block before starting a session",
+                            android.widget.Toast.LENGTH_SHORT
+                        ).show()
+                        showEditOptionsSheet = true
+                    } else {
+                        val duration = blockedAppsViewModel.selectedDurationMinutes.value
+                        navController.navigate("focusSession/$duration")
+                    }
                 },
                 onDismiss = { showPermissionsDialog = false }
             )
@@ -185,6 +220,7 @@ fun DashboardScreen(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
+                .navigationBarsPadding()
         ) {
             BottomNavBar(
                 selectedTab = selectedTab,
@@ -194,6 +230,7 @@ fun DashboardScreen(
                         "Schedules" -> onSchedulesClick()
                         "Chats" -> onChatsClick()
                         "Blocks" -> onBlocksClick()
+                        "Quotes" -> onQuotesClick()
                     }
                 }
             )

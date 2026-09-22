@@ -13,16 +13,21 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.focusbubble.ui.viewmodel.BlockedAppsViewModel
 import com.focusbubble.ui.viewmodel.FocusStatsViewModel
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.collectAsState
 
-
+/**
+ * Card-free dashboard content — timer, blocked-apps preview, and edit button
+ * float directly on the background image, matching the reference app's look.
+ * No profile circle here anymore — profile lives in the account screen (hamburger menu).
+ */
 @Composable
 fun ProfileFocusCard(
     userName: String?,
@@ -30,117 +35,89 @@ fun ProfileFocusCard(
     blockedAppsViewModel: BlockedAppsViewModel,
     onEditClick: () -> Unit
 ) {
-    val name = userName ?: "User"
-    val firstLetter = name.first().uppercaseChar()
-
-    // ✅ collect state properly
     val weeklyTime by focusStatsViewModel.weeklyFocusTime.collectAsState()
     val blockedAppsUi by blockedAppsViewModel.blockedAppsUi.collectAsState()
 
-    Box(
+    // Soft drop shadow so white text stays legible over bright parts of the background
+    val textShadow = Shadow(
+        color = Color.Black.copy(alpha = 0.55f),
+        blurRadius = 18f
+    )
+
+    Column(
         modifier = Modifier.fillMaxWidth(),
-        contentAlignment = Alignment.Center
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth(0.85f)
-                .height(480.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.Black.copy(alpha = 0.5f)),
-            shape = RoundedCornerShape(20.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(24.dp),
-                verticalArrangement = Arrangement.Top,
-                horizontalAlignment = Alignment.CenterHorizontally
+        // ---------- Weekly Focus Time ----------
+        Text(
+            text = String.format("%02d:%02d", weeklyTime / 60, weeklyTime % 60),
+            color = Color.White,
+            fontSize = 72.sp,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.displayLarge.copy(shadow = textShadow)
+        )
+        Text(
+            text = "TIME FOCUSED",
+            color = Color.White.copy(alpha = 0.8f),
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Medium,
+            letterSpacing = 1.6.sp,
+            style = MaterialTheme.typography.labelMedium.copy(shadow = textShadow)
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // ---------- Blocked Apps Preview ----------
+        if (blockedAppsUi.isNotEmpty()) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
             ) {
-                // Profile Circle
-                Box(
-                    modifier = Modifier
-                        .size(150.dp)
-                        .border(3.dp, Color.White, CircleShape)
-                        .background(Color.Black, CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = firstLetter.toString(),
-                        color = Color.White,
-                        fontSize = 48.sp,
-                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-                    )
-                }
+                com.focusbubble.ui.components.StackedAppIcons(
+                    icons = blockedAppsUi.take(3).mapNotNull { it.iconBitmap }
+                )
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.width(4.dp))
 
-                // Weekly Focus Time
                 Text(
-                    text = String.format("%02d:%02d", weeklyTime / 60, weeklyTime % 60),
+                    text = "${blockedAppsUi.size} apps blocked",
                     color = Color.White,
-                    fontSize = 36.sp,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.bodyMedium.copy(shadow = textShadow)
                 )
-                Text(
-                    text = "Time Focused",
-                    color = Color.Gray,
-                    fontSize = 14.sp
-                )
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                // Blocked Apps UI
-                if (blockedAppsUi.isNotEmpty()) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        blockedAppsUi.take(3).forEach { app ->
-                            if (app.iconBitmap != null) {
-                                Image(
-                                    bitmap = app.iconBitmap,
-                                    contentDescription = null, // ✅ No extra text in UI
-                                    modifier = Modifier
-                                        .size(36.dp)
-                                        .clip(RoundedCornerShape(8.dp))
-                                )
-                            }
-                        }
-
-                        Text(
-                            text = "${blockedAppsUi.size} Apps Blocked",
-                            color = Color.White,
-                            fontSize = 22.sp,
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-                        )
-                    }
-                } else {
-                    Text(
-                        text = "No Apps Blocked",
-                        color = Color.White,
-                        fontSize = 14.sp
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(30.dp))
-
-                // Edit Button
-                OutlinedButton(
-                    onClick = onEditClick,
-                    modifier = Modifier.wrapContentWidth(),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
-                    shape = RoundedCornerShape(8.dp),
-                    border = ButtonDefaults.outlinedButtonBorder
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = "Edit",
-                        tint = Color.White,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Edit")
-                }
             }
+        } else {
+            Text(
+                text = "No apps blocked",
+                color = Color.White.copy(alpha = 0.8f),
+                fontSize = 13.sp,
+                style = MaterialTheme.typography.bodyMedium.copy(shadow = textShadow)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(18.dp))
+
+        // ---------- Edit — ghost pill, no solid fill, so it stays part of the background ----------
+        OutlinedButton(
+            onClick = onEditClick,
+            modifier = Modifier.height(36.dp),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = Color.White
+            ),
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.8f)),
+            shape = RoundedCornerShape(18.dp),
+            contentPadding = PaddingValues(horizontal = 16.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Edit,
+                contentDescription = "Edit",
+                tint = Color.White,
+                modifier = Modifier.size(13.dp)
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text("Edit", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
         }
     }
 }

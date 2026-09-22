@@ -15,6 +15,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.content.Intent
+import android.provider.Settings
 import com.focusbubble.ui.utils.PermissionHelper
 
 @Composable
@@ -25,36 +27,70 @@ fun PermissionsCheckDialog(
     val context = LocalContext.current
     var hasUsageStats by remember { mutableStateOf(PermissionHelper.hasUsageStatsPermission(context)) }
     var hasOverlay by remember { mutableStateOf(PermissionHelper.hasOverlayPermission(context)) }
+    var hasAccessibility by remember { mutableStateOf(PermissionHelper.hasAccessibilityPermission(context)) }
+    var hasNotificationListener by remember { mutableStateOf(PermissionHelper.hasNotificationListenerPermission(context)) }
+    var showAccessibilityExplainer by remember { mutableStateOf(false) }
+    var showNotificationListenerExplainer by remember { mutableStateOf(false) }
 
-    android.util.Log.d("PermissionsDialog", "Dialog created - Overlay: $hasOverlay, Usage: $hasUsageStats")
+    android.util.Log.d("PermissionsDialog", "Dialog created - Overlay: $hasOverlay, Usage: $hasUsageStats, Accessibility: $hasAccessibility, NotificationListener: $hasNotificationListener")
 
-    // Continuously recheck permissions while dialog is open
     LaunchedEffect(Unit) {
         while (true) {
-            kotlinx.coroutines.delay(1000) // Check every second
-            
+            kotlinx.coroutines.delay(1000)
+
             val previousOverlay = hasOverlay
             val previousUsage = hasUsageStats
-            
+            val previousAccessibility = hasAccessibility
+            val previousNotificationListener = hasNotificationListener
+
             hasOverlay = PermissionHelper.hasOverlayPermission(context)
             hasUsageStats = PermissionHelper.hasUsageStatsPermission(context)
-            
-            // Log changes
+            hasAccessibility = PermissionHelper.hasAccessibilityPermission(context)
+            hasNotificationListener = PermissionHelper.hasNotificationListenerPermission(context)
+
             if (hasOverlay != previousOverlay) {
                 android.util.Log.d("PermissionsDialog", "Overlay changed: $previousOverlay → $hasOverlay")
             }
             if (hasUsageStats != previousUsage) {
                 android.util.Log.d("PermissionsDialog", "Usage changed: $previousUsage → $hasUsageStats")
             }
-            
-            // If both granted, automatically proceed
-            if (hasOverlay && hasUsageStats) {
-                android.util.Log.d("PermissionsDialog", "✅ Both permissions granted! Auto-proceeding")
-                kotlinx.coroutines.delay(500) // Small delay for smooth UX
+            if (hasAccessibility != previousAccessibility) {
+                android.util.Log.d("PermissionsDialog", "Accessibility changed: $previousAccessibility → $hasAccessibility")
+            }
+            if (hasNotificationListener != previousNotificationListener) {
+                android.util.Log.d("PermissionsDialog", "NotificationListener changed: $previousNotificationListener → $hasNotificationListener")
+            }
+
+            if (hasOverlay && hasUsageStats && hasAccessibility && hasNotificationListener) {
+                android.util.Log.d("PermissionsDialog", "✅ All permissions granted! Auto-proceeding")
+                kotlinx.coroutines.delay(500)
                 onAllPermissionsGranted()
                 break
             }
         }
+    }
+
+    if (showAccessibilityExplainer) {
+        AccessibilityExplainerDialog(
+            onOpenSettings = {
+                showAccessibilityExplainer = false
+                val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+                context.startActivity(intent)
+            },
+            onDismiss = { showAccessibilityExplainer = false }
+        )
+        return
+    }
+
+    if (showNotificationListenerExplainer) {
+        NotificationListenerExplainerDialog(
+            onOpenSettings = {
+                showNotificationListenerExplainer = false
+                PermissionHelper.requestNotificationListenerPermission(context)
+            },
+            onDismiss = { showNotificationListenerExplainer = false }
+        )
+        return
     }
 
     AlertDialog(
@@ -73,26 +109,22 @@ fun PermissionsCheckDialog(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Show priority message based on what's missing
+                val allGranted = hasOverlay && hasUsageStats && hasAccessibility && hasNotificationListener
                 val priorityMessage = when {
-                    !hasOverlay && !hasUsageStats -> 
-                        "Please grant both permissions to enable app blocking:"
-                    !hasOverlay -> 
-                        "✅ Usage Access granted! Now grant Overlay permission:"
-                    !hasUsageStats -> 
-                        "✅ Overlay granted! Now grant Usage Access permission:"
-                    else -> 
-                        "All permissions granted!"
+                    !hasOverlay -> "Please grant these permissions to enable app blocking:"
+                    !hasUsageStats -> "✅ Overlay granted! Now grant Usage Access:"
+                    !hasAccessibility -> "✅ Almost there! Now enable Accessibility Service:"
+                    !hasNotificationListener -> "✅ Almost done! Now enable Media Control Access:"
+                    else -> "All permissions granted!"
                 }
-                
+
                 Text(
                     priorityMessage,
-                    color = if (hasOverlay && hasUsageStats) Color(0xFF4CAF50) else Color.Gray,
+                    color = if (allGranted) Color(0xFF4CAF50) else Color.Gray,
                     fontSize = 14.sp,
-                    fontWeight = if (hasOverlay && hasUsageStats) FontWeight.Bold else FontWeight.Normal
+                    fontWeight = if (allGranted) FontWeight.Bold else FontWeight.Normal
                 )
 
-                // Overlay Permission - Show FIRST (priority)
                 PermissionItem(
                     title = "1. Display Over Other Apps",
                     description = "Required to show block screen when you open a blocked app",
@@ -104,7 +136,6 @@ fun PermissionsCheckDialog(
                     }
                 )
 
-                // Usage Stats Permission - Show SECOND
                 PermissionItem(
                     title = "2. Usage Access",
                     description = "Required to detect which app is running and block it",
@@ -116,7 +147,29 @@ fun PermissionsCheckDialog(
                     }
                 )
 
-                if (!hasOverlay || !hasUsageStats) {
+                PermissionItem(
+                    title = "3. Accessibility Service",
+                    description = "Required to fully block apps — stops them from reopening or floating over other apps",
+                    isGranted = hasAccessibility,
+                    isPriority = hasOverlay && hasUsageStats && !hasAccessibility,
+                    onGrant = {
+                        android.util.Log.d("PermissionsDialog", "User tapped Grant for Accessibility")
+                        showAccessibilityExplainer = true
+                    }
+                )
+
+                PermissionItem(
+                    title = "4. Media Control Access",
+                    description = "Required to pause video/audio in blocked apps, not just hide them",
+                    isGranted = hasNotificationListener,
+                    isPriority = hasOverlay && hasUsageStats && hasAccessibility && !hasNotificationListener,
+                    onGrant = {
+                        android.util.Log.d("PermissionsDialog", "User tapped Grant for Notification Listener")
+                        showNotificationListenerExplainer = true
+                    }
+                )
+
+                if (!allGranted) {
                     Text(
                         "💡 Tip: After granting permission in Settings, press Back to return here. The dialog will auto-update!",
                         color = Color(0xFF3D8DFF),
@@ -129,15 +182,16 @@ fun PermissionsCheckDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    // Recheck permissions
                     hasUsageStats = PermissionHelper.hasUsageStatsPermission(context)
                     hasOverlay = PermissionHelper.hasOverlayPermission(context)
-                    
-                    if (hasUsageStats && hasOverlay) {
+                    hasAccessibility = PermissionHelper.hasAccessibilityPermission(context)
+                    hasNotificationListener = PermissionHelper.hasNotificationListenerPermission(context)
+
+                    if (hasUsageStats && hasOverlay && hasAccessibility && hasNotificationListener) {
                         onAllPermissionsGranted()
                     }
                 },
-                enabled = hasUsageStats && hasOverlay,
+                enabled = hasUsageStats && hasOverlay && hasAccessibility && hasNotificationListener,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFF3D8DFF),
                     disabledContainerColor = Color.Gray
@@ -155,6 +209,115 @@ fun PermissionsCheckDialog(
 }
 
 @Composable
+private fun AccessibilityExplainerDialog(
+    onOpenSettings: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF1C1C1C),
+        title = {
+            Text(
+                "Enable Accessibility Service",
+                color = Color.White,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    "FocusBubble needs this to fully block distracting apps — including stopping them from reopening or floating over other apps.",
+                    color = Color.Gray,
+                    fontSize = 13.sp
+                )
+                ExplainerStep(1, "Tap \"Open Settings\" below")
+                ExplainerStep(2, "Find and tap \"FocusBubble\" in the list")
+                ExplainerStep(3, "Turn the toggle ON")
+                ExplainerStep(4, "Android will show a warning — this is normal for any app blocker. Tap \"Allow\" to continue")
+                ExplainerStep(5, "Return to FocusBubble — we'll detect it automatically")
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onOpenSettings,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3D8DFF))
+            ) {
+                Text("Open Settings")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = Color.Gray)
+            }
+        }
+    )
+}
+
+@Composable
+private fun NotificationListenerExplainerDialog(
+    onOpenSettings: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF1C1C1C),
+        title = {
+            Text(
+                "Enable Media Control Access",
+                color = Color.White,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    "FocusBubble needs this to pause videos or music in blocked apps — so they actually stop, not just hide behind the screen.",
+                    color = Color.Gray,
+                    fontSize = 13.sp
+                )
+                ExplainerStep(1, "Tap \"Open Settings\" below")
+                ExplainerStep(2, "Find and tap \"FocusBubble\" in the list")
+                ExplainerStep(3, "Turn the toggle ON, then confirm \"Allow\"")
+                ExplainerStep(4, "Return to FocusBubble — we'll detect it automatically")
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onOpenSettings,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3D8DFF))
+            ) {
+                Text("Open Settings")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = Color.Gray)
+            }
+        }
+    )
+}
+
+@Composable
+private fun ExplainerStep(number: Int, text: String) {
+    Row(verticalAlignment = Alignment.Top) {
+        Text(
+            "$number.",
+            color = Color(0xFF3D8DFF),
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.width(20.dp)
+        )
+        Text(
+            text,
+            color = Color.White,
+            fontSize = 13.sp
+        )
+    }
+}
+
+@Composable
 private fun PermissionItem(
     title: String,
     description: String,
@@ -166,16 +329,14 @@ private fun PermissionItem(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = when {
-                isGranted -> Color(0xFF1E4620)  // Green when granted
-                isPriority -> Color(0xFF1E3A5F)  // Blue when it's the priority one
-                else -> Color(0xFF2C2C2C)  // Gray when not priority
+                isGranted -> Color(0xFF1E4620)
+                isPriority -> Color(0xFF1E3A5F)
+                else -> Color(0xFF2C2C2C)
             }
         ),
         shape = RoundedCornerShape(12.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -190,27 +351,16 @@ private fun PermissionItem(
                             modifier = Modifier.size(20.dp)
                         )
                         Spacer(Modifier.width(8.dp))
-                        Text(
-                            title,
-                            color = Color.White,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Text(title, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     }
                     Spacer(Modifier.height(4.dp))
-                    Text(
-                        description,
-                        color = Color.Gray,
-                        fontSize = 12.sp
-                    )
+                    Text(description, color = Color.Gray, fontSize = 12.sp)
                 }
 
                 if (!isGranted) {
                     Button(
                         onClick = onGrant,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF3D8DFF)
-                        ),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3D8DFF)),
                         modifier = Modifier.padding(start = 8.dp)
                     ) {
                         Text("Grant", fontSize = 12.sp)

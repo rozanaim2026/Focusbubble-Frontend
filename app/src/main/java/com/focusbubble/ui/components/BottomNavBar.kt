@@ -30,8 +30,9 @@ fun BottomNavBar(selectedTab: String, onTabSelected: (String) -> Unit) {
                 Text(
                     "Schedules",
                     color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 11.sp,
+                    maxLines = 1
                 )
             },
             colors = NavigationBarItemDefaults.colors(
@@ -52,8 +53,9 @@ fun BottomNavBar(selectedTab: String, onTabSelected: (String) -> Unit) {
                 Text(
                     "Chats",
                     color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 11.sp,
+                    maxLines = 1
                 )
             },
             colors = NavigationBarItemDefaults.colors(
@@ -74,8 +76,9 @@ fun BottomNavBar(selectedTab: String, onTabSelected: (String) -> Unit) {
                 Text(
                     "Blocks",
                     color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 11.sp,
+                    maxLines = 1
                 )
             },
             colors = NavigationBarItemDefaults.colors(
@@ -96,8 +99,9 @@ fun BottomNavBar(selectedTab: String, onTabSelected: (String) -> Unit) {
                 Text(
                     "Quotes",
                     color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 11.sp,
+                    maxLines = 1
                 )
             },
             colors = NavigationBarItemDefaults.colors(

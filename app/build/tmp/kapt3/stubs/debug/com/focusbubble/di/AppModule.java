@@ -1,7 +1,6 @@
 package com.focusbubble.di;
 
 import android.content.Context;
-import androidx.room.Room;
 import com.focusbubble.data.AppDatabase;
 import com.focusbubble.data.dao.BlockedAppDao;
 import com.focusbubble.data.repository.BlockedAppsRepository;

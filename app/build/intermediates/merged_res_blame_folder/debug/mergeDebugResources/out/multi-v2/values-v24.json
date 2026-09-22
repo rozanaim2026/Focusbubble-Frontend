@@ -4,7 +4,7 @@
             "outputFile": "com.focusbubble.app-mergeDebugResources-79:/values-v24/values-v24.xml",
             "map": [
                 {
-                    "source": "/Users/apple/.gradle/caches/transforms-4/c863abe9cd2e3e50642a953e8e068519/transformed/appcompat-1.6.1/res/values-v24/values-v24.xml",
+                    "source": "/Users/apple/.gradle/caches/8.13/transforms/304f808552c2926806e1278049c2404d/transformed/appcompat-1.6.1/res/values-v24/values-v24.xml",
                     "from": {
                         "startLines": "2,3",
                         "startColumns": "4,4",
@@ -14,7 +14,7 @@
                     }
                 },
                 {
-                    "source": "/Users/apple/.gradle/caches/transforms-4/c6ab16393e432383a64a63b30a592c60/transformed/material-1.12.0/res/values-v24/values-v24.xml",
+                    "source": "/Users/apple/.gradle/caches/8.13/transforms/9d056926284884f9d8ad5fb834bc105e/transformed/material-1.12.0/res/values-v24/values-v24.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,9,12,15",
                         "startColumns": "4,4,4,4,4,4,4,4",
