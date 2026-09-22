@@ -301,7 +301,7 @@ Required for:
 The Android application communicates with the separate backend repository:
 
 ```text
-[https://github.com/rozanaim2026/Focusbubble-Backend](https://github.com/rozanaim2026/Focusbubble-Backend)
+[https://github.com/rozanaim2026/Focusbubble-Backend]
 ```
 
 Android network files:
@@ -324,7 +324,7 @@ app/src/main/java/com/focusbubble/data/repository/BlockedAppsRepository.kt
 ## Production Base URL
 
 ```kotlin
-[https://your-render-service.onrender.com/](https://your-render-service.onrender.com/)
+[https://your-render-service.onrender.com/]
 ```
 
 The Retrofit base URL should end with `/`.
@@ -475,21 +475,11 @@ If necessary, use Android Studio Device Manager:
 
 <a id="demo"></a>
 
-# 🎥 Demo
+## 🎥 Demo
 
-A screen recording of the FocusBubble application will be added here.
+Watch the FocusBubble application demonstration:
 
-```text
-Demo video:
-[Add Google Drive link here]
-```
-
-Example:
-
-```markdown
-[▶️ Watch FocusBubble Demo](YOUR_GOOGLE_DRIVE_LINK_HERE)
-```
-
+[▶️ Watch the FocusBubble Demo](https://drive.google.com/file/d/1huUHpc7xJlbaWn8B0FC9OGSYItKeiGed/view?usp=sharing)
 ---
 
 <a id="author"></a>
